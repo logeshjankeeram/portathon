@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Port Security Spoofing Detection – Portfolio</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+</head>
+
+<body>
+    <div class="container">
+        <nav class="nav">
+            <div style="display:flex;gap:8px;align-items:center">
+                <span class="badge">Maritime</span>
+                <strong>Port Security – Spoofing Detection</strong>
+            </div>
+            <div>
+                <a class="active" href="./index.html">Overview</a>
+                <a href="./methods.html">Methods</a>
+                <a href="./code.html">Code</a>
+                <a href="./demo.html">Demo</a>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <h1>Detecting GNSS/GPS Spoofing for Port Security</h1>
+            <p>
+                This project demonstrates a practical, multi-method framework to detect maritime spoofing in real time.
+                It includes a live events UI, a dedicated port authority dashboard, and an interactive dead-reckoning
+                demo map.
+            </p>
+            <div style="display:flex;gap:12px;margin-top:16px">
+                <a class="btn" href="http://localhost:8000/" target="_blank">Open Main App</a>
+                <a class="btn secondary" href="http://localhost:8001/" target="_blank">Open Security Dashboard</a>
+            </div>
+        </section>
+
+        <div class="card" style="margin-top:8px">
+            <h3>Challenge – Port of Klaipėda</h3>
+            <p class="small">
+                Recently, the Port of Klaipėda has encountered increasing cases of GPS signal interference. Currently,
+                there is no alert system in place—neither for those participating in vessel traffic nor for the port’s
+                cargo handling companies that depend on GPS signals for their operations. Such disruptions create
+                serious risks for safe navigation, especially in zones with dense traffic of ships and tugboats and can
+                disrupt the smooth execution of cargo handling tasks.
+            </p>
+            <p class="small">
+                Interference of this kind may result in inaccurate navigation, hazardous maneuvers, or even incidents.
+                Reliable positioning information is becoming ever more crucial for the safety and efficiency of port
+                operations.
+            </p>
+            <p class="small"><strong>Challenge objective:</strong> Design a real-time GPS interference detection and
+                warning system that will automatically notify vessels and cargo operation participants in case of signal
+                disruptions. The system should:
+            </p>
+            <ul class="small">
+                <li>Provide clear and tangible benefits to end-users by delivering timely alerts</li>
+                <li>Include a technological concept for how an innovative platform can enable quick identification of
+                    positioning issues</li>
+                <li>Reduce the risk of navigation errors</li>
+                <li>Help prevent potential incidents within the port area for all who rely on GPS-based equipment</li>
+            </ul>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+            <h3>Our Solution: MANA-based Spoofing Detection & Alert System</h3>
+            <p class="small"><strong>What We Built</strong></p>
+            <p class="small">
+                We adapted the MANA framework (MAritime NMEA-based Anomaly detection) — a software-only method for
+                detecting GNSS spoofing from regular NMEA-0183 data — and wrapped around it a live dashboard and
+                actionable response protocol for the Klaipėda Port Authority.
+            </p>
+            <ul class="small">
+                <li><strong>Lightweight & retrofit-ready:</strong> MANA monitors existing NMEA strings and runs anomaly
+                    detection in software.</li>
+                <li><strong>Modular detection engine:</strong> We combine multiple anomaly methods (residuals,
+                    consistency checks, deviation thresholds) so weaknesses in one method are mitigated by others. <a
+                        href="https://www.mdpi.com/2077-1312/11/5/928" target="_blank" rel="noopener">MDPI paper</a>
+                </li>
+                <li><strong>Alert layer:</strong> Traffic-light UI (green/amber/red) for operators; amber/red signals
+                    potential spoofing to VTS.</li>
+                <li><strong>Response orchestration:</strong> Protocols for cross-check via shore radar, secure VHF/HF
+                    contact, and pilotage escalation.</li>
+            </ul>
+            <p class="small"><strong>What Makes It Innovative</strong></p>
+            <ol class="small" style="padding-left:18px">
+                <li><strong>Cost-effective retrofit:</strong> Software-first deployment on existing vessels or edge
+                    boxes (Raspberry Pi/NUC).</li>
+                <li><strong>Anomaly fusion / ensemble detection:</strong> Fuses trajectory consistency, NMEA residuals,
+                    and thresholds to reduce false alarms.</li>
+                <li><strong>Operationally actionable:</strong> Detection mapped to clear operator protocols;
+                    traffic-light UI aids decision-making under pressure.</li>
+                <li><strong>Scalable across fleets & ports:</strong> Modular and software-driven; supports many vessels
+                    feeding one command center.</li>
+                <li><strong>TRL 5 maturity:</strong> Validated in relevant environments (dataset + simulations); ready
+                    for pilot deployment.</li>
+            </ol>
+            <p class="small"><strong>How It Can Be Scaled / Extended</strong></p>
+            <ul class="small">
+                <li>Edge device packaging for ship NMEA buses</li>
+                <li>Cloud aggregation to correlate multi-vessel spoofing and regional events</li>
+                <li>ML models that learn per-vessel normal behavior for proactive alerts</li>
+                <li>Fusion with AIS and shore radar to raise confidence</li>
+                <li>Collaborative detection networks across Baltic ports</li>
+            </ul>
+        </div>
+
+        <div class="grid" style="margin-top:8px">
+            <div class="card">
+                <h3>Highlights</h3>
+                <ul class="small">
+                    <li>Rolling live events table with risk indicators</li>
+                    <li>Server-side rolling average with spoofed-file logic</li>
+                    <li>Separate real-time port dashboard (Netlify-ready)</li>
+                    <li>Hybrid AIS processing and dead reckoning demo</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Tech Stack</h3>
+                <ul class="small">
+                    <li>FastAPI (Python), threading and shared state</li>
+                    <li>Vanilla JS frontend, Leaflet map</li>
+                    <li>Pandas for AIS parsing and data processing</li>
+                    <li>Static portfolio hosted on Netlify</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Project Demo</h3>
+                <p class="small">Public demo link (update after deploy):</p>
+                <p><a class="btn" href="#" target="_blank">View Hosted Demo</a></p>
+                <p class="small">Local: <code>http://localhost:8000/</code>, <code>http://localhost:8001/</code></p>
+            </div>
+        </div>
+
+        <footer class="footer">© 2025 Port Security Spoofing Detection
+            <div style="margin-top:8px">
+                <strong>Created by:</strong> Logesh Jankeeram — Software Development | Support Team Management | AI &
+                Data Analytics —
+                <a href="https://www.linkedin.com/in/logeshjankeeram/" target="_blank" rel="noopener">LinkedIn</a>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

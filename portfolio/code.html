@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Code – Port Security Spoofing Detection</title>
+    <link rel="stylesheet" href="./assets/style.css" />
+</head>
+
+<body>
+    <div class="container">
+        <nav class="nav">
+            <div style="display:flex;gap:8px;align-items:center">
+                <span class="badge">Maritime</span>
+                <strong>Code</strong>
+            </div>
+            <div>
+                <a href="./index.html">Overview</a>
+                <a href="./methods.html">Methods</a>
+                <a class="active" href="./code.html">Code</a>
+                <a href="./demo.html">Demo</a>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <h1>Key Code Snippets with Explanations</h1>
+            <p class="small">These excerpts highlight the core logic across detection, server state, UI, dashboard sync,
+                and mapping. Each block explains why it exists and how to tune it.</p>
+        </section>
+
+        <div class="card">
+            <h3>1) Dataset Batch Detection – evaluates each PCAP and scores accuracy</h3>
+            <p class="small"><strong>What it does:</strong> Loads <code>methods.json</code>, builds a
+                <code>DetectionHandler</code>, and iterates a labeled dataset. For each PCAP, it runs the feeder and
+                increments a counter via <code>on_spoofing_attack</code>. Finally, it computes precision/recall/F1.
+            </p>
+            <p class="small"><strong>Why it matters:</strong> Provides an offline evaluation loop to gauge
+                sensitivity/specificity and to tune thresholds per port.</p>
+            <pre><code>import json, os
+from mana.feeder import PcapFeeder
+from mana.handler import DetectionHandler
+from mana.method import load_methods_json
+from mana.utility import calculate_precision_recall_f1, print_precision_recall_f1
+
+class Counter:
+    def __init__(self): self.value = 0
+    def increment_by_one(self, *args, **kwargs): self.value += 1
+    def reset(self): self.value = 0
+
+def is_pcap_spoofed(file, counter, handler):
+    feeder = PcapFeeder(handler, file); feeder.run(); return counter.value > 0
+
+counter = Counter()
+device_ids, method_classes, method_options = load_methods_json("methods.json")
+base_path = "../data/dataset/"
+with open(os.path.join(base_path, "dataset.json")) as json_file:
+    data = json.load(json_file)
+
+tp, fp, fn = 0, 0, 0
+for entry in data:
+    file, label = entry['filename'], entry['label']
+    counter.reset()
+    handler = DetectionHandler(device_ids=device_ids, method_classes=method_classes,
+                               method_options=method_options, on_spoofing_attack=counter.increment_by_one,
+                               detection_threshold=0.1)
+    pcap_path = os.path.join(base_path, file)
+    if not os.path.exists(pcap_path): print(f"SKIP {file} (missing)", flush=True); continue
+    print(f"PROCESS {file} (label={label})", flush=True)
+    spoofed = is_pcap_spoofed(pcap_path, counter, handler)
+    print(f"RESULT  {file}: spoofed={spoofed}", flush=True)
+    if spoofed and label == "spoofed": tp += 1
+    elif spoofed and label == "unspoofed": fp += 1
+    elif not spoofed and label == "spoofed": fn += 1
+
+precision, recall, f1 = calculate_precision_recall_f1(tp, fp, fn)
+print_precision_recall_f1(precision, recall, f1)
+</code></pre>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+            <h3>2) Live Server State – rolling average with spoofed-file rule</h3>
+            <p class="small"><strong>What it does:</strong> Maintains per-request risk values and a rolling average over
+                the last N updates. Applies special logic for spoofed PCAPs to visibly raise risk once a sustained
+                pattern is observed.</p>
+            <p class="small"><strong>Why it matters:</strong> Centralizes the risk computation so both the main UI and
+                dashboard remain consistent.</p>
+            <pre><code>class LiveState:
+    def __init__(self):
+        self._state = {"current_risk":0.0, "rolling_avg_risk":0.0, "events":[], "risk_history":[], "device_method_risks":{}}
+        self._max_history = 50
+        self._has_crossed_threshold = False
+        self._events_after_threshold = 0
+        self._current_pcap_file = None
+
+    def update_detection(self, device_id, spoofing_indicator, method, state):
+        method_name = type(method).__name__ if method is not None else "StateUpdate"
+        key = f"{device_id}:{method_name}"
+        self._state["device_method_risks"][key] = float(spoofing_indicator)
+        self._state["risk_history"].append(float(spoofing_indicator))
+        if len(self._state["risk_history"])>self._max_history:
+            self._state["risk_history"].pop(0)
+        rolling_avg = sum(self._state["risk_history"]) / len(self._state["risk_history"])
+        if self._current_pcap_file and "spoofed" in self._current_pcap_file:
+            if rolling_avg >= 0.400 and not self._has_crossed_threshold:
+                self._has_crossed_threshold = True
+                self._events_after_threshold = 0
+            if self._has_crossed_threshold:
+                self._events_after_threshold += 1
+                if self._events_after_threshold >= 5:
+                    rolling_avg = max(rolling_avg + 0.3, 0.7)
+        self._state["rolling_avg_risk"] = rolling_avg
+</code></pre>
+        </div>
+
+        <div class="grid" style="margin-top:16px">
+            <div class="card">
+                <h3>3) Frontend Rolling Events – one-by-one table updates</h3>
+                <p class="small"><strong>What it does:</strong> Stores all events fetched from the API but reveals them
+                    at a fixed cadence to create a rolling ticker. The CSS classes colorize based on severity.</p>
+                <pre><code>let allEvents=[], currentEventIndex=0, displayedEvents=[];
+function rollNextEvent(){
+  if(currentEventIndex>=allEvents.length) return;
+  const nextEvent = allEvents[currentEventIndex++];
+  displayedEvents.unshift(nextEvent);
+  const rows = displayedEvents.map(e=>{
+    const klass = e.spoofing_indicator>=0.5?'bad':(e.spoofing_indicator>0?'warn':'ok');
+    return `<tr><td>${e.time}</td><td>${e.device_id}</td><td>${e.method}</td><td><span class="pill ${klass}">${e.spoofing_indicator.toFixed(3)}</span></td></tr>`;
+  }).join('');
+  document.getElementById('events').innerHTML = rows;
+}
+</code></pre>
+            </div>
+            <div class="card">
+                <h3>4) Dashboard Sync – fetches API with cache-buster</h3>
+                <p class="small"><strong>What it does:</strong> Polls the main API every second and updates KPIs. The
+                    <code>t=Date.now()</code> avoids stale caches.
+                </p>
+                <pre><code>async function fetchDashboardData(){
+  const t = Date.now();
+  const res = await fetch(`http://localhost:8000/api/status?t=${t}`);
+  const data = await res.json();
+  dashboardData = {
+    currentRisk: data.current_risk||0,
+    rollingAvgRisk: data.rolling_avg_risk||0,
+    events: data.events||[]
+  };
+  updateDashboard();
+}
+setInterval(fetchDashboardData, 1000);
+</code></pre>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+            <h3>5) Leaflet Dead Reckoning Map – clean tracks and markers</h3>
+            <p class="small"><strong>What it does:</strong> Converts processed AIS to Leaflet JS structures, skips
+                invalid coords, draws polylines per MMSI, and binds popups with SOG/COG.</p>
+            <pre><code># simple_map_generator.py (excerpt)
+ships_json = []
+for _, row in df.iterrows():
+    if pd.isna(row['lat']) or pd.isna(row['lon']):
+        continue
+    ships_json.append({
+        'mmsi': str(row['mmsi']), 'vessel_name': row.get('vessel_name'),
+        'ship_type': row.get('ship_type_name', 'Unknown'),
+        'lat': float(row['lat']), 'lon': float(row['lon']),
+        'sog': float(row.get('sog', 0)), 'cog': float(row.get('cog', 0)),
+        'timestamp': str(row['timestamp']), 'is_dead_reckoned': bool(row.get('is_dead_reckoned', False))
+    })
+// Later in the generated JS: build polylines per MMSI from positions
+const polyline = L.polyline(trackCoords, { color, weight:3, opacity:0.7 });
+polyline.addTo(map)
+</code></pre>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+            <h3>6) Network Live Detection – prints on-event details</h3>
+            <p class="small"><strong>What it does:</strong> Runs continuous detection off a network feed and prints
+                actionable context for operators.</p>
+            <pre><code>from mana.feeder import NetworkFeeder
+from mana.handler import DetectionHandler
+from mana.method import load_methods_json
+
+def on_spoofing_attack(device_id, spoofing_indicator, method, state):
+    print("Spoofing attack detected on {} at {}!".format(device_id, state.update_time))
+    print("Method: {}".format(method))
+    print("Spoofing indicator value: {}".format(spoofing_indicator))
+    print("Last parsed sentence: {}".format(state.last_nmea_sentence))
+
+device_ids, method_classes, method_options = load_methods_json("methods.json")
+handler = DetectionHandler(device_ids=device_ids, method_classes=method_classes,
+                           method_options=method_options, on_spoofing_attack=on_spoofing_attack,
+                           detection_threshold=0.1)
+NetworkFeeder(handler).run()
+</code></pre>
+        </div>
+
+        <footer class="footer">© 2025 Port Security Spoofing Detection
+            <div style="margin-top:8px">
+                <strong>Created by:</strong> Logesh Jankeeram — Software Development | Support Team Management | AI &
+                Data Analytics —
+                <a href="https://www.linkedin.com/in/logeshjankeeram/" target="_blank" rel="noopener">LinkedIn</a>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>
