@@ -17,4 +17,4 @@ RUN if [ -f mana/requirements.txt ]; then pip install -r mana/requirements.txt; 
 RUN pip install fastapi uvicorn[standard] pandas
 
 ENV PORT=10000
-CMD ["uvicorn", "examples.live_server:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "10000"]
