@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: portathon
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/status
+    envVars:
+      - key: MANA_METHODS
+        value: /app/mana/examples/methods_accurate.json
+      - key: MANA_PCAP_DIR
+        value: /app/mana/data/dataset
+      - key: MANA_THRESHOLD
+        value: 0.5
