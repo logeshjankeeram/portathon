@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_02468425c08545e264332ac90db8f8c1 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+
+        <style>
+            #map_02468425c08545e264332ac90db8f8c1 {
+                height: 600px !important;
+                min-height: 600px !important;
+            }
+            .folium-map {
+                height: 600px !important;
+                min-height: 600px !important;
+            }
+        </style>
+</head>
+<body>
+    
+    
+        <div style="position: fixed; 
+                    bottom: 50px; left: 50px; width: 200px; height: 300px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:14px; padding: 10px">
+        <h4>Ship Types</h4>
+        
+            <p><i class="fa fa-circle" style="color:#FF6B6B"></i> Cargo</p>
+            
+            <p><i class="fa fa-circle" style="color:#4ECDC4"></i> Tanker</p>
+            
+            <p><i class="fa fa-circle" style="color:#45B7D1"></i> Passenger</p>
+            
+            <p><i class="fa fa-circle" style="color:#96CEB4"></i> Fishing</p>
+            
+            <p><i class="fa fa-circle" style="color:#FFEAA7"></i> Pleasure craft</p>
+            
+            <p><i class="fa fa-circle" style="color:#DDA0DD"></i> Tug</p>
+            
+            <p><i class="fa fa-circle" style="color:#98D8C8"></i> Pilot vessel</p>
+            
+            <p><i class="fa fa-circle" style="color:#F7DC6F"></i> Search and rescue</p>
+            
+            <p><i class="fa fa-circle" style="color:#BB8FCE"></i> Military ops</p>
+            
+            <p><i class="fa fa-circle" style="color:#BDC3C7"></i> Unknown</p>
+            
+        <h4>Markers</h4>
+        <p><i class="fa fa-play" style="color:green"></i> Start Position</p>
+        <p><i class="fa fa-stop" style="color:red"></i> End Position</p>
+        <p><i class="fa fa-circle" style="color:orange"></i> Dead Reckoned</p>
+        </div>
+        
+    
+            <div style="position: fixed; 
+                        top: 20px; left: 20px; width: 300px; height: 120px; 
+                        background-color: white; border:2px solid grey; z-index:9999; 
+                        font-size:12px; padding: 10px; border-radius: 5px;">
+            <h4 style="margin-top: 0;">Time Controls</h4>
+            <div style="margin-bottom: 10px;">
+                <input type="range" id="timeSlider" min="0" max="99" value="0" 
+                       style="width: 100%;" onchange="updateTime(this.value)">
+                <div style="text-align: center; font-size: 10px;">
+                    <span id="currentTime">14:31:47</span>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="playAnimation()" id="playBtn" style="margin-right: 5px;">▶ Play</button>
+                <button onclick="pauseAnimation()" id="pauseBtn" style="margin-right: 5px;">⏸ Pause</button>
+                <button onclick="resetAnimation()">⏹ Reset</button>
+            </div>
+            </div>
+            
+            <script>
+            let animationInterval = null;
+            let currentStep = 0;
+            const totalSteps = 100;
+            const startTime = new Date('2025-09-25 14:31:47');
+            const endTime = new Date('2025-09-25 21:14:50');
+            
+            function updateTime(step) {
+                currentStep = parseInt(step);
+                const timeDiff = endTime - startTime;
+                const currentTime = new Date(startTime.getTime() + (timeDiff * currentStep / totalSteps));
+                document.getElementById('currentTime').textContent = currentTime.toLocaleTimeString();
+                updateMapDisplay(currentTime);
+            }
+            
+            function playAnimation() {
+                if (animationInterval) return;
+                document.getElementById('playBtn').textContent = '⏸ Playing';
+                animationInterval = setInterval(() => {
+                    currentStep = (currentStep + 1) % totalSteps;
+                    document.getElementById('timeSlider').value = currentStep;
+                    updateTime(currentStep);
+                    if (currentStep === 0) {
+                        pauseAnimation();
+                    }
+                }, 200);
+            }
+            
+            function pauseAnimation() {
+                if (animationInterval) {
+                    clearInterval(animationInterval);
+                    animationInterval = null;
+                }
+                document.getElementById('playBtn').textContent = '▶ Play';
+            }
+            
+            function resetAnimation() {
+                pauseAnimation();
+                currentStep = 0;
+                document.getElementById('timeSlider').value = 0;
+                updateTime(0);
+            }
+            
+            function updateMapDisplay(currentTime) {
+                // This will be implemented to show/hide markers based on time
+                console.log('Updating map for time:', currentTime);
+            }
+            </script>
+            
+    
+        <div style="position: fixed; 
+                    top: 160px; left: 20px; width: 300px; height: 80px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 10px; border-radius: 5px;">
+        <h4 style="margin-top: 0;">Vessel Selection</h4>
+        <select id="vesselSelect" onchange="selectVessel(this.value)" style="width: 100%; padding: 5px;">
+            <option value="all">All Vessels</option><option value="327463651">RV Star 1 (327463651)</option><option value="252494221">SY Sun 4 (252494221)</option><option value="327266841">MY Adventure 53 (327266841)</option><option value="327259715">ATB Pioneer 46 (327259715)</option>
+        </select>
+        <div style="margin-top: 5px; font-size: 10px;">
+            <label><input type="checkbox" id="showTracks" checked onchange="toggleTracks()"> Show Tracks</label>
+            <label style="margin-left: 10px;"><input type="checkbox" id="showMarkers" checked onchange="toggleMarkers()"> Show Markers</label>
+        </div>
+        </div>
+        
+        <script>
+        function selectVessel(mmsi) {
+            console.log('Selected vessel:', mmsi);
+            // This will be implemented to filter map display
+            updateVesselInfo(mmsi);
+        }
+        
+        function toggleTracks() {
+            const showTracks = document.getElementById('showTracks').checked;
+            console.log('Toggle tracks:', showTracks);
+            // This will be implemented to show/hide tracks
+        }
+        
+        function toggleMarkers() {
+            const showMarkers = document.getElementById('showMarkers').checked;
+            console.log('Toggle markers:', showMarkers);
+            // This will be implemented to show/hide markers
+        }
+        
+        // updateVesselInfo function will be defined later in the info panel
+        </script>
+        
+    
+        <div style="position: fixed; 
+                    top: 20px; right: 20px; width: 350px; height: 500px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 15px; border-radius: 5px; overflow-y: auto;">
+        <h4 style="margin-top: 0;">Vessel Information</h4>
+        <div id="vesselInfo">
+            <p style="color: #666; font-style: italic;">Select a vessel to view details</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Navigation Status Codes:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>0</strong> = Under way using engine</p>
+            <p><strong>1</strong> = At anchor</p>
+            <p><strong>2</strong> = Not under command</p>
+            <p><strong>3</strong> = Restricted maneuverability</p>
+            <p><strong>4</strong> = Constrained by her draught</p>
+            <p><strong>5</strong> = Moored</p>
+            <p><strong>6</strong> = Aground</p>
+            <p><strong>7</strong> = Engaged in fishing</p>
+            <p><strong>8</strong> = Under way sailing</p>
+            <p><strong>9-14</strong> = Reserved for future use</p>
+            <p><strong>15</strong> = Undefined</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Data Fields:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>SOG:</strong> Speed over Ground (0.0 to 102.3 knots)</p>
+            <p><strong>COG:</strong> Course over Ground (0° to 360°)</p>
+            <p><strong>True Heading:</strong> Ship's actual heading (0° to 360°, 511 = N/A)</p>
+            <p><strong>MMSI:</strong> Maritime Mobile Service Identity (unique ship ID)</p>
+            <p><strong>Message Type:</strong> AIS message type (1,2,3 = position reports)</p>
+            <p><strong>Position Accuracy:</strong> GPS accuracy (0 = DGPS, 1 = GPS)</p>
+        </div>
+        </div>
+        
+        <script>
+        // Vessel data from Python backend
+        const vesselData = {"327463651": {"mmsi": "327463651", "vessel_name": "RV Star 1", "ship_type_name": "Unknown", "total_positions": 40, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-25T14:31:47", "lat": 55.7007588229035, "lon": 21.07447747205275, "sog": 44.0, "cog": 150.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:32:49", "lat": 55.75283882290352, "lon": 20.99066413871941, "sog": 32.8, "cog": 71.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:33:49", "lat": 55.75435882290352, "lon": 20.94079747205275, "sog": 32.8, "cog": 7.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:34:47", "lat": 55.775478822903516, "lon": 21.10599747205275, "sog": 32.8, "cog": 60.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:35:48", "lat": 55.80105215623686, "lon": 20.862157472052743, "sog": 39.2, "cog": 22.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:36:50", "lat": 55.8291588229035, "lon": 20.78087747205275, "sog": 44.0, "cog": 145.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:39:48", "lat": 55.90237882290352, "lon": 20.665490805386085, "sog": 17.6, "cog": 182.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:41:48", "lat": 55.94718548957018, "lon": 20.545330805386087, "sog": 31.2, "cog": 30.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:42:51", "lat": 55.9698188229035, "lon": 20.49218413871941, "sog": 20.0, "cog": 185.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:43:47", "lat": 55.986332156236834, "lon": 20.668397472052746, "sog": 26.4, "cog": 94.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:50:18", "lat": 56.115878822903504, "lon": 20.44050413871942, "sog": 5.6, "cog": 148.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:51:47", "lat": 56.146118822903524, "lon": 20.198077472052745, "sog": 5.6, "cog": 123.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:56:19", "lat": 56.22555048957019, "lon": 20.216904138719414, "sog": 12.0, "cog": 324.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:56:47", "lat": 56.23133882290352, "lon": 20.006237472052746, "sog": 12.0, "cog": 94.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:57:18", "lat": 56.242565489570175, "lon": 19.97983747205275, "sog": 7.2, "cog": 73.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T14:57:47", "lat": 56.27349882290351, "lon": 19.95581080538608, "sog": 16.8, "cog": 54.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:00:48", "lat": 56.281365489570184, "lon": 19.79783747205275, "sog": 24.0, "cog": 41.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:22:18", "lat": 56.677825489570175, "lon": 6.56919747205275, "sog": 18.4, "cog": 14.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:27:48", "lat": 56.76443215623686, "lon": 6.328424138719413, "sog": 11.2, "cog": 59.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:28:18", "lat": 56.74429882290351, "lon": 6.302664138719408, "sog": 13.6, "cog": 110.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:35:47", "lat": 56.854598822903505, "lon": 6.029890805386074, "sog": 5.6, "cog": 99.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:36:47", "lat": 56.90152548957018, "lon": 5.988744138719412, "sog": 7.2, "cog": 198.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:37:47", "lat": 56.88779215623685, "lon": 5.913650805386084, "sog": 13.6, "cog": 57.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:39:19", "lat": 56.92854048957019, "lon": 5.857944138719418, "sog": 24.0, "cog": 6.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:42:48", "lat": 57.036998822903506, "lon": 5.765597472052747, "sog": 5.6, "cog": 220.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:43:47", "lat": 57.030518822903524, "lon": 5.700824138719412, "sog": 13.6, "cog": 19.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:46:18", "lat": 57.09147882290352, "lon": 5.817730805386077, "sog": 4.8, "cog": 182.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:49:18", "lat": 57.17422882290352, "lon": 5.557544138719408, "sog": 11.2, "cog": 171.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:49:47", "lat": 57.155908822903505, "lon": 5.57695747205274, "sog": 13.6, "cog": 41.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:51:19", "lat": 57.180918822903514, "lon": 5.5941308053860865, "sog": 37.6, "cog": 73.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:52:47", "lat": 58.75283882290352, "lon": 5.54437080538608, "sog": 24.8, "cog": 174.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:58:50", "lat": 58.91838548957019, "lon": 5.349997472052749, "sog": 7.2, "cog": 156.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:59:48", "lat": 58.93662548957018, "lon": 5.309330805386082, "sog": 30.4, "cog": 84.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:00:48", "lat": 58.96288548957019, "lon": 5.235890805386077, "sog": 20.0, "cog": 187.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:09:47", "lat": 57.43299882290352, "lon": 4.835410805386076, "sog": 36.8, "cog": 68.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:10:48", "lat": 57.45974548957019, "lon": 4.785357472052752, "sog": 32.8, "cog": 107.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:23:48", "lat": 57.83171882290352, "lon": 4.243864138719417, "sog": 50.4, "cog": 201.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:26:49", "lat": 57.88081215623685, "lon": 4.105037472052743, "sog": 24.0, "cog": 223.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:36:47", "lat": 58.3509188229035, "lon": 3.8099708053860866, "sog": 7.2, "cog": 246.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:45:48", "lat": 58.62336715623683, "lon": 3.475090805386074, "sog": 20.0, "cog": 7.9, "nav_status": 0, "is_dead_reckoned": false}]}, "252494221": {"mmsi": "252494221", "vessel_name": "SY Sun 4", "ship_type_name": "Unknown", "total_positions": 14, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-25T15:06:08", "lat": 55.740772793377175, "lon": 21.14064644033245, "sog": 6.4, "cog": 108.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:06:38", "lat": 55.75418612671049, "lon": 21.092459773665784, "sog": 6.4, "cog": 44.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T15:07:38", "lat": 55.7737261267105, "lon": 21.048539773665784, "sog": 8.0, "cog": 199.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:49:33", "lat": 53.387142793377166, "lon": 4.041366440332457, "sog": 48.8, "cog": 46.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:53:02", "lat": 53.37782779337718, "lon": 3.8962731069991214, "sog": 8.0, "cog": 303.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T16:58:32", "lat": 53.075721126710505, "lon": 3.5939531069991126, "sog": 1.6, "cog": 300.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:00:32", "lat": 53.079001126710494, "lon": 3.711499773665782, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:02:02", "lat": 53.0323611267105, "lon": 3.448646440332457, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:04:02", "lat": 53.00185446004383, "lon": 3.3326731069991133, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:05:02", "lat": 52.989401126710504, "lon": 3.5082997736657866, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:11:32", "lat": 52.88462779337718, "lon": 3.039579773665782, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:12:02", "lat": 52.873427793377175, "lon": 3.0188331069991143, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:17:32", "lat": 52.78780112671049, "lon": 2.7898731069991136, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-25T17:24:31", "lat": 52.6764411267105, "lon": 2.4697397736657827, "sog": 10.4, "cog": 363.1, "nav_status": 0, "is_dead_reckoned": false}]}, "327266841": {"mmsi": "327266841", "vessel_name": "MY Adventure 53", "ship_type_name": "Unknown", "total_positions": 1, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-25T18:26:33", "lat": 55.73360696564723, "lon": 21.096975426983587, "sog": 0.8, "cog": 195.3, "nav_status": 0, "is_dead_reckoned": false}]}, "327259715": {"mmsi": "327259715", "vessel_name": "ATB Pioneer 46", "ship_type_name": "Unknown", "total_positions": 1, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-25T21:14:50", "lat": 55.72233706654368, "lon": 21.087276202163235, "sog": 52.0, "cog": 44.9, "nav_status": 0, "is_dead_reckoned": false}]}};
+        
+        function updateVesselInfo(mmsi) {
+            const vesselInfoDiv = document.getElementById('vesselInfo');
+            
+            if (mmsi === 'all') {
+                vesselInfoDiv.innerHTML = '<p style="color: #666; font-style: italic;">All vessels selected</p>';
+                return;
+            }
+            
+            const vessel = vesselData[mmsi];
+            if (!vessel) {
+                vesselInfoDiv.innerHTML = '<p style="color: #e74c3c;">Vessel data not found</p>';
+                return;
+            }
+            
+            // Get latest position data
+            const latestPosition = vessel.track_points[vessel.track_points.length - 1];
+            
+            vesselInfoDiv.innerHTML = `
+                <div style="border: 1px solid #ddd; padding: 10px; border-radius: 3px; background-color: #f9f9f9;">
+                    <h5 style="margin-top: 0;">${vessel.vessel_name || 'Unknown Vessel'}</h5>
+                    <p><strong>MMSI:</strong> ${vessel.mmsi}</p>
+                    <p><strong>Ship Type:</strong> ${vessel.ship_type_name}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Latest Position Data</h6>
+                    <p><strong>Time:</strong> ${new Date(latestPosition.timestamp).toLocaleString()}</p>
+                    <p><strong>Speed (SOG):</strong> ${latestPosition.sog !== null ? latestPosition.sog.toFixed(1) + ' knots' : 'N/A'}</p>
+                    <p><strong>Course (COG):</strong> ${latestPosition.cog !== null ? latestPosition.cog.toFixed(1) + '°' : 'N/A'}</p>
+                    <p><strong>Navigation Status:</strong> ${getNavStatusText(latestPosition.nav_status)}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Track Statistics</h6>
+                    <p><strong>Total Positions:</strong> ${vessel.total_positions}</p>
+                    <p><strong>Dead Reckoned:</strong> ${vessel.dead_reckoned_positions}</p>
+                    <p><strong>DR Percentage:</strong> ${(vessel.dead_reckoned_positions/vessel.total_positions*100).toFixed(1)}%</p>
+                </div>
+            `;
+        }
+        
+        function getNavStatusText(status) {
+            const statusMap = {
+                0: "Under way using engine",
+                1: "At anchor", 
+                2: "Not under command",
+                3: "Restricted maneuverability",
+                4: "Constrained by her draught",
+                5: "Moored",
+                6: "Aground",
+                7: "Engaged in fishing",
+                8: "Under way sailing",
+                15: "Undefined"
+            };
+            return statusMap[status] || `Status ${status}`;
+        }
+        </script>
+        
+    
+            <div class="folium-map" id="map_02468425c08545e264332ac90db8f8c1" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_02468425c08545e264332ac90db8f8c1 = L.map(
+                "map_02468425c08545e264332ac90db8f8c1",
+                {
+                    center: [55.7, 21.1],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 10,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_77b30af24bebf9506e87bd65161fec8c = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_77b30af24bebf9506e87bd65161fec8c.addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+            var poly_line_0d06dae7de87e46bdee59f466c1083f0 = L.polyline(
+                [[55.7007588229035, 21.07447747205275], [55.75283882290352, 20.99066413871941], [55.75435882290352, 20.94079747205275], [55.775478822903516, 21.10599747205275], [55.80105215623686, 20.862157472052743], [55.8291588229035, 20.78087747205275], [55.90237882290352, 20.665490805386085], [55.94718548957018, 20.545330805386087], [55.9698188229035, 20.49218413871941], [55.986332156236834, 20.668397472052746], [56.115878822903504, 20.44050413871942], [56.146118822903524, 20.198077472052745], [56.22555048957019, 20.216904138719414], [56.23133882290352, 20.006237472052746], [56.242565489570175, 19.97983747205275], [56.27349882290351, 19.95581080538608], [56.281365489570184, 19.79783747205275], [56.677825489570175, 6.56919747205275], [56.76443215623686, 6.328424138719413], [56.74429882290351, 6.302664138719408], [56.854598822903505, 6.029890805386074], [56.90152548957018, 5.988744138719412], [56.88779215623685, 5.913650805386084], [56.92854048957019, 5.857944138719418], [57.036998822903506, 5.765597472052747], [57.030518822903524, 5.700824138719412], [57.09147882290352, 5.817730805386077], [57.17422882290352, 5.557544138719408], [57.155908822903505, 5.57695747205274], [57.180918822903514, 5.5941308053860865], [58.75283882290352, 5.54437080538608], [58.91838548957019, 5.349997472052749], [58.93662548957018, 5.309330805386082], [58.96288548957019, 5.235890805386077], [57.43299882290352, 4.835410805386076], [57.45974548957019, 4.785357472052752], [57.83171882290352, 4.243864138719417], [57.88081215623685, 4.105037472052743], [58.3509188229035, 3.8099708053860866], [58.62336715623683, 3.475090805386074]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+        var popup_412b245b685cc1530cb476de1a3e7861 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_7efd493833751f461da802bee45246bb = $(`<div id="html_7efd493833751f461da802bee45246bb" style="width: 100.0%; height: 100.0%;">RV Star 1 (Unknown)</div>`)[0];
+                popup_412b245b685cc1530cb476de1a3e7861.setContent(html_7efd493833751f461da802bee45246bb);
+            
+        
+
+        poly_line_0d06dae7de87e46bdee59f466c1083f0.bindPopup(popup_412b245b685cc1530cb476de1a3e7861)
+        ;
+
+        
+    
+    
+            var marker_b60f267b7808a0247a35d9aa6ce37b74 = L.marker(
+                [55.7007588229035, 21.07447747205275],
+                {
+}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+            var icon_d093e8205ee6396291fa2cb7bb2a1c5a = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_b3ca8d32cf366565cf8348456d4b8710 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_9b95140a27ec2504fba5932da28c96b0 = $(`<div id="html_9b95140a27ec2504fba5932da28c96b0" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">RV Star 1</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327463651</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-25 14:31:47</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 44.0 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 150.3°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 40</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327463651')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_b3ca8d32cf366565cf8348456d4b8710.setContent(html_9b95140a27ec2504fba5932da28c96b0);
+            
+        
+
+        marker_b60f267b7808a0247a35d9aa6ce37b74.bindPopup(popup_b3ca8d32cf366565cf8348456d4b8710)
+        ;
+
+        
+    
+    
+            marker_b60f267b7808a0247a35d9aa6ce37b74.bindTooltip(
+                `<div>
+                     Start: RV Star 1 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b60f267b7808a0247a35d9aa6ce37b74.setIcon(icon_d093e8205ee6396291fa2cb7bb2a1c5a);
+            
+    
+            var marker_8edeb7cdcd2a593acf151650a6c0f27a = L.marker(
+                [58.62336715623683, 3.475090805386074],
+                {
+}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+            var icon_7f701e17eb813131961f90d8d2b15bc3 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_586ce571467a0078f609024818aa50a7 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_38ca4c24cf0156c0f68539bc66e0358b = $(`<div id="html_38ca4c24cf0156c0f68539bc66e0358b" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">RV Star 1</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327463651</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-25 16:45:48</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 20.0 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 7.9°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 40</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327463651')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_586ce571467a0078f609024818aa50a7.setContent(html_38ca4c24cf0156c0f68539bc66e0358b);
+            
+        
+
+        marker_8edeb7cdcd2a593acf151650a6c0f27a.bindPopup(popup_586ce571467a0078f609024818aa50a7)
+        ;
+
+        
+    
+    
+            marker_8edeb7cdcd2a593acf151650a6c0f27a.bindTooltip(
+                `<div>
+                     End: RV Star 1 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_8edeb7cdcd2a593acf151650a6c0f27a.setIcon(icon_7f701e17eb813131961f90d8d2b15bc3);
+            
+    
+            var poly_line_4cb67051643ebfc3f6f8a9d16f2b8705 = L.polyline(
+                [[55.740772793377175, 21.14064644033245], [55.75418612671049, 21.092459773665784], [55.7737261267105, 21.048539773665784], [53.387142793377166, 4.041366440332457], [53.37782779337718, 3.8962731069991214], [53.075721126710505, 3.5939531069991126], [53.079001126710494, 3.711499773665782], [53.0323611267105, 3.448646440332457], [53.00185446004383, 3.3326731069991133], [52.989401126710504, 3.5082997736657866], [52.88462779337718, 3.039579773665782], [52.873427793377175, 3.0188331069991143], [52.78780112671049, 2.7898731069991136], [52.6764411267105, 2.4697397736657827]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+        var popup_4fab9f0fa71a8f81a5759bffc7c1a7f9 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_0ce511062c756b22c267bb0e782d1201 = $(`<div id="html_0ce511062c756b22c267bb0e782d1201" style="width: 100.0%; height: 100.0%;">SY Sun 4 (Unknown)</div>`)[0];
+                popup_4fab9f0fa71a8f81a5759bffc7c1a7f9.setContent(html_0ce511062c756b22c267bb0e782d1201);
+            
+        
+
+        poly_line_4cb67051643ebfc3f6f8a9d16f2b8705.bindPopup(popup_4fab9f0fa71a8f81a5759bffc7c1a7f9)
+        ;
+
+        
+    
+    
+            var marker_8f580f264a354f0d83b246922d9c2f8b = L.marker(
+                [55.740772793377175, 21.14064644033245],
+                {
+}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+            var icon_0d2c006b0a3bccebb854f03594fda474 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_1d2f005900db10b3dc0cf9446ac6a38b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_77d498a8484e82f6fe8148c3e8a00bfe = $(`<div id="html_77d498a8484e82f6fe8148c3e8a00bfe" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">SY Sun 4</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252494221</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-25 15:06:08</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 6.4 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 108.7°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 14</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252494221')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_1d2f005900db10b3dc0cf9446ac6a38b.setContent(html_77d498a8484e82f6fe8148c3e8a00bfe);
+            
+        
+
+        marker_8f580f264a354f0d83b246922d9c2f8b.bindPopup(popup_1d2f005900db10b3dc0cf9446ac6a38b)
+        ;
+
+        
+    
+    
+            marker_8f580f264a354f0d83b246922d9c2f8b.bindTooltip(
+                `<div>
+                     Start: SY Sun 4 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_8f580f264a354f0d83b246922d9c2f8b.setIcon(icon_0d2c006b0a3bccebb854f03594fda474);
+            
+    
+            var marker_d07845f27e95a38eb14bfb1b9d230ddd = L.marker(
+                [52.6764411267105, 2.4697397736657827],
+                {
+}
+            ).addTo(map_02468425c08545e264332ac90db8f8c1);
+        
+    
+            var icon_9a28e7bb0fb55213b726ec6034e3cb78 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_d3e987ea6ef9c86807f5679e66758d4a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_c48d0f9b95d66ee82d8378d10addd3e9 = $(`<div id="html_c48d0f9b95d66ee82d8378d10addd3e9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">SY Sun 4</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252494221</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-25 17:24:31</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 10.4 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 363.1°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 14</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252494221')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_d3e987ea6ef9c86807f5679e66758d4a.setContent(html_c48d0f9b95d66ee82d8378d10addd3e9);
+            
+        
+
+        marker_d07845f27e95a38eb14bfb1b9d230ddd.bindPopup(popup_d3e987ea6ef9c86807f5679e66758d4a)
+        ;
+
+        
+    
+    
+            marker_d07845f27e95a38eb14bfb1b9d230ddd.bindTooltip(
+                `<div>
+                     End: SY Sun 4 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d07845f27e95a38eb14bfb1b9d230ddd.setIcon(icon_9a28e7bb0fb55213b726ec6034e3cb78);
+            
+</script>
+</html>

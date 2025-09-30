@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_74efb12699633a64fc9b61105065aa1a {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+        <div style="position: fixed; 
+                    bottom: 50px; left: 50px; width: 200px; height: 300px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:14px; padding: 10px">
+        <h4>Ship Types</h4>
+        
+            <p><i class="fa fa-circle" style="color:#FF6B6B"></i> Cargo</p>
+            
+            <p><i class="fa fa-circle" style="color:#4ECDC4"></i> Tanker</p>
+            
+            <p><i class="fa fa-circle" style="color:#45B7D1"></i> Passenger</p>
+            
+            <p><i class="fa fa-circle" style="color:#96CEB4"></i> Fishing</p>
+            
+            <p><i class="fa fa-circle" style="color:#FFEAA7"></i> Pleasure craft</p>
+            
+            <p><i class="fa fa-circle" style="color:#DDA0DD"></i> Tug</p>
+            
+            <p><i class="fa fa-circle" style="color:#98D8C8"></i> Pilot vessel</p>
+            
+            <p><i class="fa fa-circle" style="color:#F7DC6F"></i> Search and rescue</p>
+            
+            <p><i class="fa fa-circle" style="color:#BB8FCE"></i> Military ops</p>
+            
+            <p><i class="fa fa-circle" style="color:#BDC3C7"></i> Unknown</p>
+            
+        <h4>Markers</h4>
+        <p><i class="fa fa-play" style="color:green"></i> Start Position</p>
+        <p><i class="fa fa-stop" style="color:red"></i> End Position</p>
+        <p><i class="fa fa-circle" style="color:orange"></i> Dead Reckoned</p>
+        </div>
+        
+    
+            <div style="position: fixed; 
+                        top: 20px; left: 20px; width: 300px; height: 120px; 
+                        background-color: white; border:2px solid grey; z-index:9999; 
+                        font-size:12px; padding: 10px; border-radius: 5px;">
+            <h4 style="margin-top: 0;">Time Controls</h4>
+            <div style="margin-bottom: 10px;">
+                <input type="range" id="timeSlider" min="0" max="99" value="0" 
+                       style="width: 100%;" onchange="updateTime(this.value)">
+                <div style="text-align: center; font-size: 10px;">
+                    <span id="currentTime">12:39:55</span>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="playAnimation()" id="playBtn" style="margin-right: 5px;">▶ Play</button>
+                <button onclick="pauseAnimation()" id="pauseBtn" style="margin-right: 5px;">⏸ Pause</button>
+                <button onclick="resetAnimation()">⏹ Reset</button>
+            </div>
+            </div>
+            
+            <script>
+            let animationInterval = null;
+            let currentStep = 0;
+            const totalSteps = 100;
+            const startTime = new Date('2025-09-23 12:39:55');
+            const endTime = new Date('2025-09-23 18:37:55');
+            
+            function updateTime(step) {
+                currentStep = parseInt(step);
+                const timeDiff = endTime - startTime;
+                const currentTime = new Date(startTime.getTime() + (timeDiff * currentStep / totalSteps));
+                document.getElementById('currentTime').textContent = currentTime.toLocaleTimeString();
+                updateMapDisplay(currentTime);
+            }
+            
+            function playAnimation() {
+                if (animationInterval) return;
+                document.getElementById('playBtn').textContent = '⏸ Playing';
+                animationInterval = setInterval(() => {
+                    currentStep = (currentStep + 1) % totalSteps;
+                    document.getElementById('timeSlider').value = currentStep;
+                    updateTime(currentStep);
+                    if (currentStep === 0) {
+                        pauseAnimation();
+                    }
+                }, 200);
+            }
+            
+            function pauseAnimation() {
+                if (animationInterval) {
+                    clearInterval(animationInterval);
+                    animationInterval = null;
+                }
+                document.getElementById('playBtn').textContent = '▶ Play';
+            }
+            
+            function resetAnimation() {
+                pauseAnimation();
+                currentStep = 0;
+                document.getElementById('timeSlider').value = 0;
+                updateTime(0);
+            }
+            
+            function updateMapDisplay(currentTime) {
+                // This will be implemented to show/hide markers based on time
+                console.log('Updating map for time:', currentTime);
+            }
+            </script>
+            
+    
+        <div style="position: fixed; 
+                    top: 160px; left: 20px; width: 300px; height: 80px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 10px; border-radius: 5px;">
+        <h4 style="margin-top: 0;">Vessel Selection</h4>
+        <select id="vesselSelect" onchange="selectVessel(this.value)" style="width: 100%; padding: 5px;">
+            <option value="all">All Vessels</option><option value="327423379">MS Sea 62 (327423379)</option><option value="325116486">MT Navigator 30 (325116486)</option>
+        </select>
+        <div style="margin-top: 5px; font-size: 10px;">
+            <label><input type="checkbox" id="showTracks" checked onchange="toggleTracks()"> Show Tracks</label>
+            <label style="margin-left: 10px;"><input type="checkbox" id="showMarkers" checked onchange="toggleMarkers()"> Show Markers</label>
+        </div>
+        </div>
+        
+        <script>
+        function selectVessel(mmsi) {
+            console.log('Selected vessel:', mmsi);
+            // This will be implemented to filter map display
+            updateVesselInfo(mmsi);
+        }
+        
+        function toggleTracks() {
+            const showTracks = document.getElementById('showTracks').checked;
+            console.log('Toggle tracks:', showTracks);
+            // This will be implemented to show/hide tracks
+        }
+        
+        function toggleMarkers() {
+            const showMarkers = document.getElementById('showMarkers').checked;
+            console.log('Toggle markers:', showMarkers);
+            // This will be implemented to show/hide markers
+        }
+        
+        // updateVesselInfo function will be defined later in the info panel
+        </script>
+        
+    
+        <div style="position: fixed; 
+                    top: 20px; right: 20px; width: 350px; height: 500px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 15px; border-radius: 5px; overflow-y: auto;">
+        <h4 style="margin-top: 0;">Vessel Information</h4>
+        <div id="vesselInfo">
+            <p style="color: #666; font-style: italic;">Select a vessel to view details</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Navigation Status Codes:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>0</strong> = Under way using engine</p>
+            <p><strong>1</strong> = At anchor</p>
+            <p><strong>2</strong> = Not under command</p>
+            <p><strong>3</strong> = Restricted maneuverability</p>
+            <p><strong>4</strong> = Constrained by her draught</p>
+            <p><strong>5</strong> = Moored</p>
+            <p><strong>6</strong> = Aground</p>
+            <p><strong>7</strong> = Engaged in fishing</p>
+            <p><strong>8</strong> = Under way sailing</p>
+            <p><strong>9-14</strong> = Reserved for future use</p>
+            <p><strong>15</strong> = Undefined</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Data Fields:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>SOG:</strong> Speed over Ground (0.0 to 102.3 knots)</p>
+            <p><strong>COG:</strong> Course over Ground (0° to 360°)</p>
+            <p><strong>True Heading:</strong> Ship's actual heading (0° to 360°, 511 = N/A)</p>
+            <p><strong>MMSI:</strong> Maritime Mobile Service Identity (unique ship ID)</p>
+            <p><strong>Message Type:</strong> AIS message type (1,2,3 = position reports)</p>
+            <p><strong>Position Accuracy:</strong> GPS accuracy (0 = DGPS, 1 = GPS)</p>
+        </div>
+        </div>
+        
+        <script>
+        // Vessel data from Python backend
+        const vesselData = {"327423379": {"mmsi": "327423379", "vessel_name": "MS Sea 62", "ship_type_name": "Unknown", "total_positions": 5, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-23T12:39:55", "lat": 55.69969021575895, "lon": 21.05907550545582, "sog": 4.0, "cog": 6.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-23T12:40:25", "lat": 55.68675688242561, "lon": 21.07995550545581, "sog": 11.2, "cog": 46.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-23T12:41:26", "lat": 55.6641435490923, "lon": 21.111742172122486, "sog": 4.0, "cog": 310.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-23T12:41:56", "lat": 55.678676882425634, "lon": 21.153048838789157, "sog": 0.0, "cog": 339.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-23T12:42:25", "lat": 55.63931688242562, "lon": 21.165555505455824, "sog": 0.0, "cog": 404.7, "nav_status": 0, "is_dead_reckoned": false}]}, "325116486": {"mmsi": "325116486", "vessel_name": "MT Navigator 30", "ship_type_name": "Unknown", "total_positions": 1, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-23T18:37:55", "lat": 55.71226354513731, "lon": 21.12798246659328, "sog": 4.0, "cog": 274.3, "nav_status": 8, "is_dead_reckoned": false}]}};
+        
+        function updateVesselInfo(mmsi) {
+            const vesselInfoDiv = document.getElementById('vesselInfo');
+            
+            if (mmsi === 'all') {
+                vesselInfoDiv.innerHTML = '<p style="color: #666; font-style: italic;">All vessels selected</p>';
+                return;
+            }
+            
+            const vessel = vesselData[mmsi];
+            if (!vessel) {
+                vesselInfoDiv.innerHTML = '<p style="color: #e74c3c;">Vessel data not found</p>';
+                return;
+            }
+            
+            // Get latest position data
+            const latestPosition = vessel.track_points[vessel.track_points.length - 1];
+            
+            vesselInfoDiv.innerHTML = `
+                <div style="border: 1px solid #ddd; padding: 10px; border-radius: 3px; background-color: #f9f9f9;">
+                    <h5 style="margin-top: 0;">${vessel.vessel_name || 'Unknown Vessel'}</h5>
+                    <p><strong>MMSI:</strong> ${vessel.mmsi}</p>
+                    <p><strong>Ship Type:</strong> ${vessel.ship_type_name}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Latest Position Data</h6>
+                    <p><strong>Time:</strong> ${new Date(latestPosition.timestamp).toLocaleString()}</p>
+                    <p><strong>Speed (SOG):</strong> ${latestPosition.sog !== null ? latestPosition.sog.toFixed(1) + ' knots' : 'N/A'}</p>
+                    <p><strong>Course (COG):</strong> ${latestPosition.cog !== null ? latestPosition.cog.toFixed(1) + '°' : 'N/A'}</p>
+                    <p><strong>Navigation Status:</strong> ${getNavStatusText(latestPosition.nav_status)}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Track Statistics</h6>
+                    <p><strong>Total Positions:</strong> ${vessel.total_positions}</p>
+                    <p><strong>Dead Reckoned:</strong> ${vessel.dead_reckoned_positions}</p>
+                    <p><strong>DR Percentage:</strong> ${(vessel.dead_reckoned_positions/vessel.total_positions*100).toFixed(1)}%</p>
+                </div>
+            `;
+        }
+        
+        function getNavStatusText(status) {
+            const statusMap = {
+                0: "Under way using engine",
+                1: "At anchor", 
+                2: "Not under command",
+                3: "Restricted maneuverability",
+                4: "Constrained by her draught",
+                5: "Moored",
+                6: "Aground",
+                7: "Engaged in fishing",
+                8: "Under way sailing",
+                15: "Undefined"
+            };
+            return statusMap[status] || `Status ${status}`;
+        }
+        </script>
+        
+    
+            <div class="folium-map" id="map_74efb12699633a64fc9b61105065aa1a" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_74efb12699633a64fc9b61105065aa1a = L.map(
+                "map_74efb12699633a64fc9b61105065aa1a",
+                {
+                    center: [55.7, 21.1],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 10,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_72b4d72ce71a1ace102d76ca60d48b1a = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_72b4d72ce71a1ace102d76ca60d48b1a.addTo(map_74efb12699633a64fc9b61105065aa1a);
+        
+    
+            var poly_line_72569835eb0c67fcbd430e6035ea77b4 = L.polyline(
+                [[55.69969021575895, 21.05907550545582], [55.68675688242561, 21.07995550545581], [55.6641435490923, 21.111742172122486], [55.678676882425634, 21.153048838789157], [55.63931688242562, 21.165555505455824]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_74efb12699633a64fc9b61105065aa1a);
+        
+    
+        var popup_8e6b3344c5491c7e74f0bd98f26d5661 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_bf842ad78ba90f0adc51d64759d13ae7 = $(`<div id="html_bf842ad78ba90f0adc51d64759d13ae7" style="width: 100.0%; height: 100.0%;">MS Sea 62 (Unknown)</div>`)[0];
+                popup_8e6b3344c5491c7e74f0bd98f26d5661.setContent(html_bf842ad78ba90f0adc51d64759d13ae7);
+            
+        
+
+        poly_line_72569835eb0c67fcbd430e6035ea77b4.bindPopup(popup_8e6b3344c5491c7e74f0bd98f26d5661)
+        ;
+
+        
+    
+    
+            var marker_09190dd04b1cacdd5e7b9557b1c34aa4 = L.marker(
+                [55.69969021575895, 21.05907550545582],
+                {
+}
+            ).addTo(map_74efb12699633a64fc9b61105065aa1a);
+        
+    
+            var icon_d24583d4858fe38503625f94f57826ed = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_2c3188cf7837dde4364a7ef984169dda = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_d0bf42d11c71e4c94fc115620e5dd3a0 = $(`<div id="html_d0bf42d11c71e4c94fc115620e5dd3a0" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MS Sea 62</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327423379</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-23 12:39:55</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 4.0 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 6.3°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327423379')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_2c3188cf7837dde4364a7ef984169dda.setContent(html_d0bf42d11c71e4c94fc115620e5dd3a0);
+            
+        
+
+        marker_09190dd04b1cacdd5e7b9557b1c34aa4.bindPopup(popup_2c3188cf7837dde4364a7ef984169dda)
+        ;
+
+        
+    
+    
+            marker_09190dd04b1cacdd5e7b9557b1c34aa4.bindTooltip(
+                `<div>
+                     Start: MS Sea 62 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_09190dd04b1cacdd5e7b9557b1c34aa4.setIcon(icon_d24583d4858fe38503625f94f57826ed);
+            
+    
+            var marker_6b400ff5a1211e8b4dd6b65112f543df = L.marker(
+                [55.63931688242562, 21.165555505455824],
+                {
+}
+            ).addTo(map_74efb12699633a64fc9b61105065aa1a);
+        
+    
+            var icon_ba87c3afe0821d00ef1f74ec94edf0ad = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_bc5337431310b9eb7a37cacc6acdcd4f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_10572ec3d2af19a5c8039264e2fcfeb6 = $(`<div id="html_10572ec3d2af19a5c8039264e2fcfeb6" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MS Sea 62</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327423379</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-23 12:42:25</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 0.0 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 404.7°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327423379')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_bc5337431310b9eb7a37cacc6acdcd4f.setContent(html_10572ec3d2af19a5c8039264e2fcfeb6);
+            
+        
+
+        marker_6b400ff5a1211e8b4dd6b65112f543df.bindPopup(popup_bc5337431310b9eb7a37cacc6acdcd4f)
+        ;
+
+        
+    
+    
+            marker_6b400ff5a1211e8b4dd6b65112f543df.bindTooltip(
+                `<div>
+                     End: MS Sea 62 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6b400ff5a1211e8b4dd6b65112f543df.setIcon(icon_ba87c3afe0821d00ef1f74ec94edf0ad);
+            
+</script>
+</html>

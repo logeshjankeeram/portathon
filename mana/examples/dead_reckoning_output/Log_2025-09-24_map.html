@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_3f928f06f1def2ea47f40f63a1bafe4a {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+
+        <style>
+            #map_3f928f06f1def2ea47f40f63a1bafe4a {
+                height: 600px !important;
+                min-height: 600px !important;
+            }
+            .folium-map {
+                height: 600px !important;
+                min-height: 600px !important;
+            }
+        </style>
+</head>
+<body>
+    
+    
+        <div style="position: fixed; 
+                    bottom: 50px; left: 50px; width: 200px; height: 300px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:14px; padding: 10px">
+        <h4>Ship Types</h4>
+        
+            <p><i class="fa fa-circle" style="color:#FF6B6B"></i> Cargo</p>
+            
+            <p><i class="fa fa-circle" style="color:#4ECDC4"></i> Tanker</p>
+            
+            <p><i class="fa fa-circle" style="color:#45B7D1"></i> Passenger</p>
+            
+            <p><i class="fa fa-circle" style="color:#96CEB4"></i> Fishing</p>
+            
+            <p><i class="fa fa-circle" style="color:#FFEAA7"></i> Pleasure craft</p>
+            
+            <p><i class="fa fa-circle" style="color:#DDA0DD"></i> Tug</p>
+            
+            <p><i class="fa fa-circle" style="color:#98D8C8"></i> Pilot vessel</p>
+            
+            <p><i class="fa fa-circle" style="color:#F7DC6F"></i> Search and rescue</p>
+            
+            <p><i class="fa fa-circle" style="color:#BB8FCE"></i> Military ops</p>
+            
+            <p><i class="fa fa-circle" style="color:#BDC3C7"></i> Unknown</p>
+            
+        <h4>Markers</h4>
+        <p><i class="fa fa-play" style="color:green"></i> Start Position</p>
+        <p><i class="fa fa-stop" style="color:red"></i> End Position</p>
+        <p><i class="fa fa-circle" style="color:orange"></i> Dead Reckoned</p>
+        </div>
+        
+    
+            <div style="position: fixed; 
+                        top: 20px; left: 20px; width: 300px; height: 120px; 
+                        background-color: white; border:2px solid grey; z-index:9999; 
+                        font-size:12px; padding: 10px; border-radius: 5px;">
+            <h4 style="margin-top: 0;">Time Controls</h4>
+            <div style="margin-bottom: 10px;">
+                <input type="range" id="timeSlider" min="0" max="99" value="0" 
+                       style="width: 100%;" onchange="updateTime(this.value)">
+                <div style="text-align: center; font-size: 10px;">
+                    <span id="currentTime">05:59:13</span>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="playAnimation()" id="playBtn" style="margin-right: 5px;">▶ Play</button>
+                <button onclick="pauseAnimation()" id="pauseBtn" style="margin-right: 5px;">⏸ Pause</button>
+                <button onclick="resetAnimation()">⏹ Reset</button>
+            </div>
+            </div>
+            
+            <script>
+            let animationInterval = null;
+            let currentStep = 0;
+            const totalSteps = 100;
+            const startTime = new Date('2025-09-24 05:59:13');
+            const endTime = new Date('2025-09-24 17:50:01');
+            
+            function updateTime(step) {
+                currentStep = parseInt(step);
+                const timeDiff = endTime - startTime;
+                const currentTime = new Date(startTime.getTime() + (timeDiff * currentStep / totalSteps));
+                document.getElementById('currentTime').textContent = currentTime.toLocaleTimeString();
+                updateMapDisplay(currentTime);
+            }
+            
+            function playAnimation() {
+                if (animationInterval) return;
+                document.getElementById('playBtn').textContent = '⏸ Playing';
+                animationInterval = setInterval(() => {
+                    currentStep = (currentStep + 1) % totalSteps;
+                    document.getElementById('timeSlider').value = currentStep;
+                    updateTime(currentStep);
+                    if (currentStep === 0) {
+                        pauseAnimation();
+                    }
+                }, 200);
+            }
+            
+            function pauseAnimation() {
+                if (animationInterval) {
+                    clearInterval(animationInterval);
+                    animationInterval = null;
+                }
+                document.getElementById('playBtn').textContent = '▶ Play';
+            }
+            
+            function resetAnimation() {
+                pauseAnimation();
+                currentStep = 0;
+                document.getElementById('timeSlider').value = 0;
+                updateTime(0);
+            }
+            
+            function updateMapDisplay(currentTime) {
+                // This will be implemented to show/hide markers based on time
+                console.log('Updating map for time:', currentTime);
+            }
+            </script>
+            
+    
+        <div style="position: fixed; 
+                    top: 160px; left: 20px; width: 300px; height: 80px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 10px; border-radius: 5px;">
+        <h4 style="margin-top: 0;">Vessel Selection</h4>
+        <select id="vesselSelect" onchange="selectVessel(this.value)" style="width: 100%; padding: 5px;">
+            <option value="all">All Vessels</option><option value="252494221">FV Cargo 68 (252494221)</option><option value="252497301">MV Moon 53 (252497301)</option><option value="327284109">MV Challenger 49 (327284109)</option><option value="327283237">VLCC Sun 47 (327283237)</option><option value="327444427">MT Wave 77 (327444427)</option><option value="327267027">ATB Endeavour 54 (327267027)</option>
+        </select>
+        <div style="margin-top: 5px; font-size: 10px;">
+            <label><input type="checkbox" id="showTracks" checked onchange="toggleTracks()"> Show Tracks</label>
+            <label style="margin-left: 10px;"><input type="checkbox" id="showMarkers" checked onchange="toggleMarkers()"> Show Markers</label>
+        </div>
+        </div>
+        
+        <script>
+        function selectVessel(mmsi) {
+            console.log('Selected vessel:', mmsi);
+            // This will be implemented to filter map display
+            updateVesselInfo(mmsi);
+        }
+        
+        function toggleTracks() {
+            const showTracks = document.getElementById('showTracks').checked;
+            console.log('Toggle tracks:', showTracks);
+            // This will be implemented to show/hide tracks
+        }
+        
+        function toggleMarkers() {
+            const showMarkers = document.getElementById('showMarkers').checked;
+            console.log('Toggle markers:', showMarkers);
+            // This will be implemented to show/hide markers
+        }
+        
+        // updateVesselInfo function will be defined later in the info panel
+        </script>
+        
+    
+        <div style="position: fixed; 
+                    top: 20px; right: 20px; width: 350px; height: 500px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:12px; padding: 15px; border-radius: 5px; overflow-y: auto;">
+        <h4 style="margin-top: 0;">Vessel Information</h4>
+        <div id="vesselInfo">
+            <p style="color: #666; font-style: italic;">Select a vessel to view details</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Navigation Status Codes:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>0</strong> = Under way using engine</p>
+            <p><strong>1</strong> = At anchor</p>
+            <p><strong>2</strong> = Not under command</p>
+            <p><strong>3</strong> = Restricted maneuverability</p>
+            <p><strong>4</strong> = Constrained by her draught</p>
+            <p><strong>5</strong> = Moored</p>
+            <p><strong>6</strong> = Aground</p>
+            <p><strong>7</strong> = Engaged in fishing</p>
+            <p><strong>8</strong> = Under way sailing</p>
+            <p><strong>9-14</strong> = Reserved for future use</p>
+            <p><strong>15</strong> = Undefined</p>
+        </div>
+        
+        <hr style="margin: 15px 0;">
+        
+        <h5>Data Fields:</h5>
+        <div style="font-size: 10px; line-height: 1.4;">
+            <p><strong>SOG:</strong> Speed over Ground (0.0 to 102.3 knots)</p>
+            <p><strong>COG:</strong> Course over Ground (0° to 360°)</p>
+            <p><strong>True Heading:</strong> Ship's actual heading (0° to 360°, 511 = N/A)</p>
+            <p><strong>MMSI:</strong> Maritime Mobile Service Identity (unique ship ID)</p>
+            <p><strong>Message Type:</strong> AIS message type (1,2,3 = position reports)</p>
+            <p><strong>Position Accuracy:</strong> GPS accuracy (0 = DGPS, 1 = GPS)</p>
+        </div>
+        </div>
+        
+        <script>
+        // Vessel data from Python backend
+        const vesselData = {"252494221": {"mmsi": "252494221", "vessel_name": "FV Cargo 68", "ship_type_name": "Unknown", "total_positions": 5, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T05:59:13", "lat": 55.686844047280154, "lon": 21.108095361802864, "sog": 36.8, "cog": 225.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T05:59:43", "lat": 55.6852973806135, "lon": 21.10897536180286, "sog": 36.8, "cog": 225.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T06:00:43", "lat": 55.671220713946816, "lon": 21.126122028469535, "sog": 36.0, "cog": 196.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T06:01:45", "lat": 55.66471404728015, "lon": 21.13076202846953, "sog": 36.0, "cog": 196.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T06:02:14", "lat": 55.66095404728015, "lon": 21.13596202846953, "sog": 36.0, "cog": 196.7, "nav_status": 0, "is_dead_reckoned": false}]}, "252497301": {"mmsi": "252497301", "vessel_name": "MV Moon 53", "ship_type_name": "Unknown", "total_positions": 20, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T08:19:40", "lat": 55.70600302897898, "lon": 21.147858308483084, "sog": 59.2, "cog": 219.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T08:45:09", "lat": 54.95496302897896, "lon": 33.55281830848308, "sog": 59.2, "cog": 201.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T08:55:10", "lat": 54.76549469564562, "lon": 33.605004975149754, "sog": 61.6, "cog": 68.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:05:10", "lat": 54.574746362312304, "lon": 33.83639164181642, "sog": 4.8, "cog": 283.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:29:40", "lat": 55.748509695645645, "lon": 33.60815164181642, "sog": 8.0, "cog": 355.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:47:08", "lat": 53.83794969564564, "lon": 33.486338308483084, "sog": 4.8, "cog": 387.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:48:08", "lat": 53.81176469564564, "lon": 33.47959164181641, "sog": 1.6, "cog": 123.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:52:06", "lat": 53.68336302897898, "lon": 33.456204975149745, "sog": 4.8, "cog": 220.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T09:53:06", "lat": 53.65693802897896, "lon": 33.45044497514975, "sog": 0.0, "cog": 35.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:07:06", "lat": 53.143066362312304, "lon": 33.50033830848308, "sog": 61.6, "cog": 118.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:09:41", "lat": 53.11461302897896, "lon": 33.59311164181642, "sog": 59.2, "cog": 249.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:20:40", "lat": 52.990271362312306, "lon": 33.87932497514974, "sog": 55.2, "cog": 183.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:33:39", "lat": 52.83736469564564, "lon": 34.28199164181642, "sog": 52.8, "cog": 219.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:39:37", "lat": 52.80114636231229, "lon": 34.43580497514975, "sog": 59.2, "cog": 73.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:40:08", "lat": 52.77210636231231, "lon": 34.44788497514975, "sog": 57.6, "cog": 175.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:40:37", "lat": 52.76775802897898, "lon": 34.45801830848308, "sog": 52.8, "cog": 137.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:41:08", "lat": 52.75991969564563, "lon": 34.46812497514975, "sog": 59.2, "cog": 174.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:47:11", "lat": 52.70053802897896, "lon": 34.58039164181642, "sog": 62.4, "cog": 238.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:56:11", "lat": 52.5883463623123, "lon": 34.77948497514974, "sog": 49.6, "cog": 257.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T10:57:11", "lat": 52.58098802897896, "lon": 34.79284497514975, "sog": 48.8, "cog": 31.9, "nav_status": 0, "is_dead_reckoned": false}]}, "327284109": {"mmsi": "327284109", "vessel_name": "MV Challenger 49", "ship_type_name": "Unknown", "total_positions": 71, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T10:48:55", "lat": 55.705695989361104, "lon": 21.07369008993327, "sog": 5.6, "cog": 199.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:01:57", "lat": -2.0158823439722227, "lon": 30.695476756599934, "sog": 4.8, "cog": 39.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:02:27", "lat": -1.998842343972214, "lon": 30.6851034232666, "sog": 4.8, "cog": 116.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:02:57", "lat": -1.987962343972228, "lon": 30.674330089933267, "sog": 12.0, "cog": 129.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:03:28", "lat": -1.9459356773055703, "lon": 30.665956756599943, "sog": 7.2, "cog": 119.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:04:00", "lat": -1.9587090106388843, "lon": 30.653716756599938, "sog": 4.8, "cog": 22.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:45:28", "lat": -1.8923656773055626, "lon": 28.705316756599945, "sog": 26.4, "cog": 159.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:49:28", "lat": -1.9508490106388905, "lon": 16.22265008993327, "sog": 43.2, "cog": 30.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:49:57", "lat": -1.9649556773055536, "lon": 16.1675034232666, "sog": 45.6, "cog": 92.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:51:28", "lat": -1.9711423439722324, "lon": 16.29555675659994, "sog": 32.8, "cog": 323.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:52:28", "lat": -2.006929010638899, "lon": 16.040596756599943, "sog": 44.0, "cog": 355.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:54:57", "lat": -2.0299940106389016, "lon": 16.062490089933267, "sog": 36.8, "cog": 47.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:56:01", "lat": -2.0439690106388895, "lon": 15.799450089933277, "sog": 45.6, "cog": 329.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:57:30", "lat": -2.055009010638898, "lon": 15.671663423266612, "sog": 37.6, "cog": 377.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T12:58:01", "lat": -2.059462343972214, "lon": 15.855796756599933, "sog": 39.2, "cog": 326.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:00:30", "lat": -2.0901823439722165, "lon": 15.474116756599944, "sog": 49.6, "cog": 239.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:02:59", "lat": -2.131115677305573, "lon": 15.345796756599942, "sog": 37.6, "cog": 227.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:03:28", "lat": -2.135409010638895, "lon": 15.288890089933279, "sog": 30.4, "cog": 19.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:05:28", "lat": -3.695142343972222, "lon": 15.195076756599935, "sog": 37.6, "cog": 132.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:06:28", "lat": -3.714742343972219, "lon": 15.135876756599945, "sog": 44.0, "cog": 252.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:09:00", "lat": -3.767462343972241, "lon": 15.183823423266606, "sog": 39.2, "cog": 103.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:12:00", "lat": -3.8196223439722274, "lon": 14.805636756599942, "sog": 20.0, "cog": 201.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:13:27", "lat": -3.823489010638909, "lon": 14.755156756599934, "sog": 24.8, "cog": 262.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:13:58", "lat": -3.823779010638887, "lon": 14.725476756599935, "sog": 20.0, "cog": 134.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:14:27", "lat": -3.8241256773055596, "lon": 14.696570089933278, "sog": 24.8, "cog": 119.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:14:58", "lat": -3.8241256773055596, "lon": 14.639316756599943, "sog": 24.0, "cog": 148.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:19:58", "lat": -3.8375390106389062, "lon": 14.543770089933279, "sog": 26.4, "cog": 238.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:20:30", "lat": -3.835405677305559, "lon": 14.319636756599937, "sog": 24.0, "cog": 121.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:20:59", "lat": -3.833807343972225, "lon": 14.288996756599932, "sog": 36.8, "cog": 105.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:21:30", "lat": -3.834980677305552, "lon": 14.257903423266601, "sog": 37.6, "cog": 118.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:26:28", "lat": -3.8363406773055573, "lon": 13.997636756599935, "sog": 4.8, "cog": 94.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:26:59", "lat": -3.8364723439722326, "lon": 13.971716756599935, "sog": 5.6, "cog": 119.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:28:59", "lat": -3.8347923439722393, "lon": 13.885130089933273, "sog": 24.8, "cog": 91.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:29:28", "lat": -3.833379010638893, "lon": 13.862970089933274, "sog": 18.4, "cog": 289.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:30:59", "lat": -3.8037256773055645, "lon": 13.75009008993327, "sog": 18.4, "cog": 156.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:36:58", "lat": -3.8063923439722345, "lon": 13.677663423266612, "sog": 18.4, "cog": 68.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:40:58", "lat": -3.796285677305562, "lon": 13.278676756599939, "sog": 0.8, "cog": 300.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:44:59", "lat": -3.7791123439722156, "lon": 13.104890089933267, "sog": 12.0, "cog": 187.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:45:59", "lat": -3.7744990106389054, "lon": 13.048730089933276, "sog": 5.6, "cog": 103.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T13:59:30", "lat": -3.709804010638905, "lon": 12.453236756599939, "sog": 12.0, "cog": 68.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:11:30", "lat": -2.0881256773055696, "lon": 12.138330089933266, "sog": 20.0, "cog": 276.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:12:30", "lat": -2.0841540106388976, "lon": 11.889983423266603, "sog": 32.8, "cog": 27.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:14:00", "lat": -2.086742343972233, "lon": 11.768250089933279, "sog": 24.8, "cog": 406.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:14:28", "lat": -2.089515677305556, "lon": 11.741156756599938, "sog": 24.0, "cog": 225.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:15:28", "lat": -2.0820490106388974, "lon": 11.902596756599937, "sog": 26.4, "cog": 67.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:16:28", "lat": -2.124369010638887, "lon": 11.658116756599942, "sog": 24.8, "cog": 54.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:19:58", "lat": -3.740929010638908, "lon": 11.486943423266599, "sog": 39.2, "cog": 300.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:20:28", "lat": -3.721569010638902, "lon": 11.460010089933267, "sog": 31.2, "cog": 252.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:21:58", "lat": -3.7459156773055753, "lon": 11.341103423266606, "sog": 39.2, "cog": 275.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:22:28", "lat": -3.7772756773055534, "lon": 11.313796756599945, "sog": 32.8, "cog": 238.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:23:27", "lat": -3.7964223439722247, "lon": 11.475983423266602, "sog": 20.0, "cog": 404.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:28:58", "lat": -3.897065677305548, "lon": 9.275476756599932, "sog": 11.2, "cog": 390.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:29:29", "lat": -3.8824756773055498, "lon": 9.254623423266612, "sog": 13.6, "cog": 145.5, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:30:29", "lat": -3.9196756773055625, "lon": 9.168890089933274, "sog": 26.4, "cog": 302.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:32:58", "lat": -3.9111923439722176, "lon": 9.047316756599944, "sog": 7.2, "cog": 103.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:34:29", "lat": -3.9403656773055644, "lon": 8.931850089933267, "sog": 20.0, "cog": 68.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:35:59", "lat": -3.9449806773055656, "lon": 9.067130089933276, "sog": 13.6, "cog": 159.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:37:59", "lat": -3.954154010638902, "lon": 8.724250089933268, "sog": 20.0, "cog": 175.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:39:28", "lat": -3.9585273439722215, "lon": 8.865530089933277, "sog": 4.8, "cog": 110.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:42:27", "lat": -3.965459010638895, "lon": 8.46902342326661, "sog": 7.2, "cog": 238.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:43:27", "lat": -3.9691673439722166, "lon": 8.633850089933265, "sog": 18.4, "cog": 119.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:43:58", "lat": -3.9715940106388956, "lon": 8.414970089933266, "sog": 12.0, "cog": 131.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:44:27", "lat": -3.9732723439722264, "lon": 8.386276756599944, "sog": 18.4, "cog": 132.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:46:58", "lat": -3.9852206773055485, "lon": 8.423716756599934, "sog": 30.4, "cog": 111.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:47:59", "lat": -3.9882606773055755, "lon": 8.1727034232666, "sog": 11.2, "cog": 198.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:58:30", "lat": -4.022369010638883, "lon": 7.534490089933275, "sog": 20.0, "cog": 398.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T14:59:57", "lat": -4.026847343972221, "lon": 7.423636756599937, "sog": 20.0, "cog": 148.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T15:04:30", "lat": -4.0195140106389005, "lon": 7.1471034232666035, "sog": 18.4, "cog": 118.3, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T15:07:59", "lat": -4.055380677305564, "lon": 6.943956756599935, "sog": 13.6, "cog": 123.1, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T15:08:59", "lat": -4.063167343972239, "lon": 7.1046767565999325, "sog": 20.0, "cog": 124.7, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T15:20:00", "lat": -4.107647343972232, "lon": 6.4391300899332755, "sog": 30.4, "cog": 86.3, "nav_status": 0, "is_dead_reckoned": false}]}, "327283237": {"mmsi": "327283237", "vessel_name": "VLCC Sun 47", "ship_type_name": "Unknown", "total_positions": 5, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T11:15:46", "lat": 55.74384460585264, "lon": 21.063934310313904, "sog": 5.6, "cog": 224.6, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T11:15:56", "lat": 54.198617939185986, "lon": 20.845107643647232, "sog": 88.8, "cog": 237.4, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T11:16:01", "lat": 54.18445793918598, "lon": 20.82980097698057, "sog": 12.0, "cog": 221.4, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T11:16:56", "lat": 54.063684605852636, "lon": 20.835347643647232, "sog": 50.4, "cog": 239.9, "nav_status": 0, "is_dead_reckoned": false}, {"timestamp": "2025-09-24T15:12:29", "lat": 54.028172939185986, "lon": 20.63622764364724, "sog": 32.8, "cog": 248.0, "nav_status": 0, "is_dead_reckoned": false}]}, "327444427": {"mmsi": "327444427", "vessel_name": "MT Wave 77", "ship_type_name": "Unknown", "total_positions": 1, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T17:47:12", "lat": 55.716355780481344, "lon": 21.133950172995057, "sog": 49.1, "cog": 201.3, "nav_status": 0, "is_dead_reckoned": false}]}, "327267027": {"mmsi": "327267027", "vessel_name": "ATB Endeavour 54", "ship_type_name": "Unknown", "total_positions": 1, "dead_reckoned_positions": 0, "track_points": [{"timestamp": "2025-09-24T17:50:01", "lat": 55.70143336818915, "lon": 21.14898241022371, "sog": 5.6, "cog": 98.9, "nav_status": 0, "is_dead_reckoned": false}]}};
+        
+        function updateVesselInfo(mmsi) {
+            const vesselInfoDiv = document.getElementById('vesselInfo');
+            
+            if (mmsi === 'all') {
+                vesselInfoDiv.innerHTML = '<p style="color: #666; font-style: italic;">All vessels selected</p>';
+                return;
+            }
+            
+            const vessel = vesselData[mmsi];
+            if (!vessel) {
+                vesselInfoDiv.innerHTML = '<p style="color: #e74c3c;">Vessel data not found</p>';
+                return;
+            }
+            
+            // Get latest position data
+            const latestPosition = vessel.track_points[vessel.track_points.length - 1];
+            
+            vesselInfoDiv.innerHTML = `
+                <div style="border: 1px solid #ddd; padding: 10px; border-radius: 3px; background-color: #f9f9f9;">
+                    <h5 style="margin-top: 0;">${vessel.vessel_name || 'Unknown Vessel'}</h5>
+                    <p><strong>MMSI:</strong> ${vessel.mmsi}</p>
+                    <p><strong>Ship Type:</strong> ${vessel.ship_type_name}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Latest Position Data</h6>
+                    <p><strong>Time:</strong> ${new Date(latestPosition.timestamp).toLocaleString()}</p>
+                    <p><strong>Speed (SOG):</strong> ${latestPosition.sog !== null ? latestPosition.sog.toFixed(1) + ' knots' : 'N/A'}</p>
+                    <p><strong>Course (COG):</strong> ${latestPosition.cog !== null ? latestPosition.cog.toFixed(1) + '°' : 'N/A'}</p>
+                    <p><strong>Navigation Status:</strong> ${getNavStatusText(latestPosition.nav_status)}</p>
+                    <hr style="margin: 8px 0;">
+                    <h6 style="margin: 5px 0; color: #2c3e50;">Track Statistics</h6>
+                    <p><strong>Total Positions:</strong> ${vessel.total_positions}</p>
+                    <p><strong>Dead Reckoned:</strong> ${vessel.dead_reckoned_positions}</p>
+                    <p><strong>DR Percentage:</strong> ${(vessel.dead_reckoned_positions/vessel.total_positions*100).toFixed(1)}%</p>
+                </div>
+            `;
+        }
+        
+        function getNavStatusText(status) {
+            const statusMap = {
+                0: "Under way using engine",
+                1: "At anchor", 
+                2: "Not under command",
+                3: "Restricted maneuverability",
+                4: "Constrained by her draught",
+                5: "Moored",
+                6: "Aground",
+                7: "Engaged in fishing",
+                8: "Under way sailing",
+                15: "Undefined"
+            };
+            return statusMap[status] || `Status ${status}`;
+        }
+        </script>
+        
+    
+            <div class="folium-map" id="map_3f928f06f1def2ea47f40f63a1bafe4a" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_3f928f06f1def2ea47f40f63a1bafe4a = L.map(
+                "map_3f928f06f1def2ea47f40f63a1bafe4a",
+                {
+                    center: [55.7, 21.1],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 10,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_94c2cb497ece3cd3586bffec3263902b = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_94c2cb497ece3cd3586bffec3263902b.addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var poly_line_7bf100c613052c1bdbae52e1a9240b8c = L.polyline(
+                [[55.686844047280154, 21.108095361802864], [55.6852973806135, 21.10897536180286], [55.671220713946816, 21.126122028469535], [55.66471404728015, 21.13076202846953], [55.66095404728015, 21.13596202846953]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+        var popup_e7b13aa34211c43ea73b9725457001f7 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_b4d73fa6f530698c886714b2a9bc5d04 = $(`<div id="html_b4d73fa6f530698c886714b2a9bc5d04" style="width: 100.0%; height: 100.0%;">FV Cargo 68 (Unknown)</div>`)[0];
+                popup_e7b13aa34211c43ea73b9725457001f7.setContent(html_b4d73fa6f530698c886714b2a9bc5d04);
+            
+        
+
+        poly_line_7bf100c613052c1bdbae52e1a9240b8c.bindPopup(popup_e7b13aa34211c43ea73b9725457001f7)
+        ;
+
+        
+    
+    
+            var marker_1c7aeadfa02dd5fd0ba0a441fe57e4fc = L.marker(
+                [55.686844047280154, 21.108095361802864],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_8f2c1ff6be037fa8aa19538875c334b6 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_badc64dfe71933a325e409d49db6203a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_88cf90d7229c53ceb354c07b81d8a6d2 = $(`<div id="html_88cf90d7229c53ceb354c07b81d8a6d2" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">FV Cargo 68</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252494221</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 05:59:13</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 36.8 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 225.5°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252494221')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_badc64dfe71933a325e409d49db6203a.setContent(html_88cf90d7229c53ceb354c07b81d8a6d2);
+            
+        
+
+        marker_1c7aeadfa02dd5fd0ba0a441fe57e4fc.bindPopup(popup_badc64dfe71933a325e409d49db6203a)
+        ;
+
+        
+    
+    
+            marker_1c7aeadfa02dd5fd0ba0a441fe57e4fc.bindTooltip(
+                `<div>
+                     Start: FV Cargo 68 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_1c7aeadfa02dd5fd0ba0a441fe57e4fc.setIcon(icon_8f2c1ff6be037fa8aa19538875c334b6);
+            
+    
+            var marker_db703f68033d560e2026e36106aba513 = L.marker(
+                [55.66095404728015, 21.13596202846953],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_5b86ad731434a9151094000561904cb6 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_379a94af4fbd8acc8a74e401b4de6116 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bf97dcaa983196dcfdda18b9be028af1 = $(`<div id="html_bf97dcaa983196dcfdda18b9be028af1" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">FV Cargo 68</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252494221</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 06:02:14</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 36.0 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 196.7°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252494221')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_379a94af4fbd8acc8a74e401b4de6116.setContent(html_bf97dcaa983196dcfdda18b9be028af1);
+            
+        
+
+        marker_db703f68033d560e2026e36106aba513.bindPopup(popup_379a94af4fbd8acc8a74e401b4de6116)
+        ;
+
+        
+    
+    
+            marker_db703f68033d560e2026e36106aba513.bindTooltip(
+                `<div>
+                     End: FV Cargo 68 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_db703f68033d560e2026e36106aba513.setIcon(icon_5b86ad731434a9151094000561904cb6);
+            
+    
+            var poly_line_0e14906afdf0f69631b74aadb52dee92 = L.polyline(
+                [[55.70600302897898, 21.147858308483084], [54.95496302897896, 33.55281830848308], [54.76549469564562, 33.605004975149754], [54.574746362312304, 33.83639164181642], [55.748509695645645, 33.60815164181642], [53.83794969564564, 33.486338308483084], [53.81176469564564, 33.47959164181641], [53.68336302897898, 33.456204975149745], [53.65693802897896, 33.45044497514975], [53.143066362312304, 33.50033830848308], [53.11461302897896, 33.59311164181642], [52.990271362312306, 33.87932497514974], [52.83736469564564, 34.28199164181642], [52.80114636231229, 34.43580497514975], [52.77210636231231, 34.44788497514975], [52.76775802897898, 34.45801830848308], [52.75991969564563, 34.46812497514975], [52.70053802897896, 34.58039164181642], [52.5883463623123, 34.77948497514974], [52.58098802897896, 34.79284497514975]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+        var popup_24456fa5711d6edc6161d33bd0294cf7 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_36177e55a98b2f94a1e80b3ad284a289 = $(`<div id="html_36177e55a98b2f94a1e80b3ad284a289" style="width: 100.0%; height: 100.0%;">MV Moon 53 (Unknown)</div>`)[0];
+                popup_24456fa5711d6edc6161d33bd0294cf7.setContent(html_36177e55a98b2f94a1e80b3ad284a289);
+            
+        
+
+        poly_line_0e14906afdf0f69631b74aadb52dee92.bindPopup(popup_24456fa5711d6edc6161d33bd0294cf7)
+        ;
+
+        
+    
+    
+            var marker_8d0483b9927d3fa0873b83b2ebb7c0a5 = L.marker(
+                [55.70600302897898, 21.147858308483084],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_4f557deb76f8979e018c481a94f64d30 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_8e3139847299ea987fc2c352cc8c163f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_834372535cc4d5ba34e67601c82a30d4 = $(`<div id="html_834372535cc4d5ba34e67601c82a30d4" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MV Moon 53</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252497301</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 08:19:40</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 59.2 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 219.1°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 20</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252497301')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_8e3139847299ea987fc2c352cc8c163f.setContent(html_834372535cc4d5ba34e67601c82a30d4);
+            
+        
+
+        marker_8d0483b9927d3fa0873b83b2ebb7c0a5.bindPopup(popup_8e3139847299ea987fc2c352cc8c163f)
+        ;
+
+        
+    
+    
+            marker_8d0483b9927d3fa0873b83b2ebb7c0a5.bindTooltip(
+                `<div>
+                     Start: MV Moon 53 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_8d0483b9927d3fa0873b83b2ebb7c0a5.setIcon(icon_4f557deb76f8979e018c481a94f64d30);
+            
+    
+            var marker_b27c0b078b1624c5503fee3a3e01ea4a = L.marker(
+                [52.58098802897896, 34.79284497514975],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_36b683d406acf9f0624bf55ce4ea1e58 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_4f104965fdfda845ce209e788b9e0be9 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_700937b4bd83faffc5680a11f7d1f52e = $(`<div id="html_700937b4bd83faffc5680a11f7d1f52e" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MV Moon 53</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 252497301</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 10:57:11</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 48.8 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 31.9°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 20</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('252497301')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_4f104965fdfda845ce209e788b9e0be9.setContent(html_700937b4bd83faffc5680a11f7d1f52e);
+            
+        
+
+        marker_b27c0b078b1624c5503fee3a3e01ea4a.bindPopup(popup_4f104965fdfda845ce209e788b9e0be9)
+        ;
+
+        
+    
+    
+            marker_b27c0b078b1624c5503fee3a3e01ea4a.bindTooltip(
+                `<div>
+                     End: MV Moon 53 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b27c0b078b1624c5503fee3a3e01ea4a.setIcon(icon_36b683d406acf9f0624bf55ce4ea1e58);
+            
+    
+            var poly_line_ca065965b3c91b5903379e7b382c806a = L.polyline(
+                [[55.705695989361104, 21.07369008993327], [-2.0158823439722227, 30.695476756599934], [-1.998842343972214, 30.6851034232666], [-1.987962343972228, 30.674330089933267], [-1.9459356773055703, 30.665956756599943], [-1.9587090106388843, 30.653716756599938], [-1.8923656773055626, 28.705316756599945], [-1.9508490106388905, 16.22265008993327], [-1.9649556773055536, 16.1675034232666], [-1.9711423439722324, 16.29555675659994], [-2.006929010638899, 16.040596756599943], [-2.0299940106389016, 16.062490089933267], [-2.0439690106388895, 15.799450089933277], [-2.055009010638898, 15.671663423266612], [-2.059462343972214, 15.855796756599933], [-2.0901823439722165, 15.474116756599944], [-2.131115677305573, 15.345796756599942], [-2.135409010638895, 15.288890089933279], [-3.695142343972222, 15.195076756599935], [-3.714742343972219, 15.135876756599945], [-3.767462343972241, 15.183823423266606], [-3.8196223439722274, 14.805636756599942], [-3.823489010638909, 14.755156756599934], [-3.823779010638887, 14.725476756599935], [-3.8241256773055596, 14.696570089933278], [-3.8241256773055596, 14.639316756599943], [-3.8375390106389062, 14.543770089933279], [-3.835405677305559, 14.319636756599937], [-3.833807343972225, 14.288996756599932], [-3.834980677305552, 14.257903423266601], [-3.8363406773055573, 13.997636756599935], [-3.8364723439722326, 13.971716756599935], [-3.8347923439722393, 13.885130089933273], [-3.833379010638893, 13.862970089933274], [-3.8037256773055645, 13.75009008993327], [-3.8063923439722345, 13.677663423266612], [-3.796285677305562, 13.278676756599939], [-3.7791123439722156, 13.104890089933267], [-3.7744990106389054, 13.048730089933276], [-3.709804010638905, 12.453236756599939], [-2.0881256773055696, 12.138330089933266], [-2.0841540106388976, 11.889983423266603], [-2.086742343972233, 11.768250089933279], [-2.089515677305556, 11.741156756599938], [-2.0820490106388974, 11.902596756599937], [-2.124369010638887, 11.658116756599942], [-3.740929010638908, 11.486943423266599], [-3.721569010638902, 11.460010089933267], [-3.7459156773055753, 11.341103423266606], [-3.7772756773055534, 11.313796756599945], [-3.7964223439722247, 11.475983423266602], [-3.897065677305548, 9.275476756599932], [-3.8824756773055498, 9.254623423266612], [-3.9196756773055625, 9.168890089933274], [-3.9111923439722176, 9.047316756599944], [-3.9403656773055644, 8.931850089933267], [-3.9449806773055656, 9.067130089933276], [-3.954154010638902, 8.724250089933268], [-3.9585273439722215, 8.865530089933277], [-3.965459010638895, 8.46902342326661], [-3.9691673439722166, 8.633850089933265], [-3.9715940106388956, 8.414970089933266], [-3.9732723439722264, 8.386276756599944], [-3.9852206773055485, 8.423716756599934], [-3.9882606773055755, 8.1727034232666], [-4.022369010638883, 7.534490089933275], [-4.026847343972221, 7.423636756599937], [-4.0195140106389005, 7.1471034232666035], [-4.055380677305564, 6.943956756599935], [-4.063167343972239, 7.1046767565999325], [-4.107647343972232, 6.4391300899332755]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+        var popup_5575cce41ff6154d0ef9afeebdc81104 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_4434e16d248c10eaad7df1e8b61aa28d = $(`<div id="html_4434e16d248c10eaad7df1e8b61aa28d" style="width: 100.0%; height: 100.0%;">MV Challenger 49 (Unknown)</div>`)[0];
+                popup_5575cce41ff6154d0ef9afeebdc81104.setContent(html_4434e16d248c10eaad7df1e8b61aa28d);
+            
+        
+
+        poly_line_ca065965b3c91b5903379e7b382c806a.bindPopup(popup_5575cce41ff6154d0ef9afeebdc81104)
+        ;
+
+        
+    
+    
+            var marker_04b117294d8b431e8ffd74f0b165ac07 = L.marker(
+                [55.705695989361104, 21.07369008993327],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_0123c9808612d66ce27638ec0527e84b = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_02df7775e27db576e64c6d369c280ae4 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_6d1834b172b2529ece65c6182dbc01d2 = $(`<div id="html_6d1834b172b2529ece65c6182dbc01d2" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MV Challenger 49</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327284109</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 10:48:55</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 5.6 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 199.7°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 71</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327284109')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_02df7775e27db576e64c6d369c280ae4.setContent(html_6d1834b172b2529ece65c6182dbc01d2);
+            
+        
+
+        marker_04b117294d8b431e8ffd74f0b165ac07.bindPopup(popup_02df7775e27db576e64c6d369c280ae4)
+        ;
+
+        
+    
+    
+            marker_04b117294d8b431e8ffd74f0b165ac07.bindTooltip(
+                `<div>
+                     Start: MV Challenger 49 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_04b117294d8b431e8ffd74f0b165ac07.setIcon(icon_0123c9808612d66ce27638ec0527e84b);
+            
+    
+            var marker_ef5c76d528244ef53874f2eda392d1ed = L.marker(
+                [-4.107647343972232, 6.4391300899332755],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_35e256601e3a132033c9f68616a5fc85 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_5fff1129bc99035416456fa56fe7f8d5 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_5a11aeeb8dc12c6228feef68c5bff652 = $(`<div id="html_5a11aeeb8dc12c6228feef68c5bff652" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">MV Challenger 49</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327284109</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 15:20:00</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 30.4 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 86.3°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 71</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327284109')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_5fff1129bc99035416456fa56fe7f8d5.setContent(html_5a11aeeb8dc12c6228feef68c5bff652);
+            
+        
+
+        marker_ef5c76d528244ef53874f2eda392d1ed.bindPopup(popup_5fff1129bc99035416456fa56fe7f8d5)
+        ;
+
+        
+    
+    
+            marker_ef5c76d528244ef53874f2eda392d1ed.bindTooltip(
+                `<div>
+                     End: MV Challenger 49 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_ef5c76d528244ef53874f2eda392d1ed.setIcon(icon_35e256601e3a132033c9f68616a5fc85);
+            
+    
+            var poly_line_c78f9bed16667b030058891a908e4f08 = L.polyline(
+                [[55.74384460585264, 21.063934310313904], [54.198617939185986, 20.845107643647232], [54.18445793918598, 20.82980097698057], [54.063684605852636, 20.835347643647232], [54.028172939185986, 20.63622764364724]],
+                {"bubblingMouseEvents": true, "color": "#BDC3C7", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#BDC3C7", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+        var popup_dccc7eddebf2b242ed53993f08cc0df1 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_15ddbaffc1226eeda0a4c883ee1a6936 = $(`<div id="html_15ddbaffc1226eeda0a4c883ee1a6936" style="width: 100.0%; height: 100.0%;">VLCC Sun 47 (Unknown)</div>`)[0];
+                popup_dccc7eddebf2b242ed53993f08cc0df1.setContent(html_15ddbaffc1226eeda0a4c883ee1a6936);
+            
+        
+
+        poly_line_c78f9bed16667b030058891a908e4f08.bindPopup(popup_dccc7eddebf2b242ed53993f08cc0df1)
+        ;
+
+        
+    
+    
+            var marker_c83a9cfe69189f4819a6a86000d9875f = L.marker(
+                [55.74384460585264, 21.063934310313904],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_5d5a5bd2f3bcba38956d16b2e01d4777 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "green",
+  "iconColor": "white",
+  "icon": "play",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_3c84ef3d9379345027aae812f2e9ec52 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_cee3853dd5b6594fd31af337f316271e = $(`<div id="html_cee3853dd5b6594fd31af337f316271e" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">VLCC Sun 47</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> Start Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327283237</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 11:15:46</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 5.6 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 224.6°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327283237')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_3c84ef3d9379345027aae812f2e9ec52.setContent(html_cee3853dd5b6594fd31af337f316271e);
+            
+        
+
+        marker_c83a9cfe69189f4819a6a86000d9875f.bindPopup(popup_3c84ef3d9379345027aae812f2e9ec52)
+        ;
+
+        
+    
+    
+            marker_c83a9cfe69189f4819a6a86000d9875f.bindTooltip(
+                `<div>
+                     Start: VLCC Sun 47 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_c83a9cfe69189f4819a6a86000d9875f.setIcon(icon_5d5a5bd2f3bcba38956d16b2e01d4777);
+            
+    
+            var marker_b2dd96fb5bab3284c6e9873da5ce2e2f = L.marker(
+                [54.028172939185986, 20.63622764364724],
+                {
+}
+            ).addTo(map_3f928f06f1def2ea47f40f63a1bafe4a);
+        
+    
+            var icon_fb90db4ed8e5b6e56980c0a2043b998c = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "stop",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_6fada246f18a11b3fc6f8c806ef712d0 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_37dc0bc50b3b6defcdd6a23ec6e262bb = $(`<div id="html_37dc0bc50b3b6defcdd6a23ec6e262bb" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; font-size: 12px; max-width: 280px;">             <h4 style="margin: 0 0 10px 0; color: #2c3e50;">VLCC Sun 47</h4>             <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <p style="margin: 2px 0;"><strong>Position:</strong> End Position</p>                 <p style="margin: 2px 0;"><strong>MMSI:</strong> 327283237</p>                 <p style="margin: 2px 0;"><strong>Ship Type:</strong> Unknown</p>                 <p style="margin: 2px 0;"><strong>Time:</strong> 2025-09-24 15:12:29</p>             </div>                          <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; margin-bottom: 10px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Navigation Data</h5>                 <p style="margin: 2px 0;"><strong>Speed (SOG):</strong> 32.8 knots</p>                 <p style="margin: 2px 0;"><strong>Course (COG):</strong> 248.0°</p>                 <p style="margin: 2px 0;"><strong>Status:</strong> Under way using engine</p>             </div>                          <div style="background-color: #f0f9ff; padding: 10px; border-radius: 5px;">                 <h5 style="margin: 0 0 8px 0; color: #1e3a8a;">Track Statistics</h5>                 <p style="margin: 2px 0;"><strong>Total Positions:</strong> 5</p>                 <p style="margin: 2px 0;"><strong>Dead Reckoned:</strong> 0</p>                 <p style="margin: 2px 0;"><strong>DR Percentage:</strong> 0.0%</p>             </div>                          <div style="text-align: center; margin-top: 10px;">                 <button onclick="selectVesselFromPopup('327283237')"                          style="background-color: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">                     View Details                 </button>             </div>         </div>                  <script>         function selectVesselFromPopup(mmsi) {             // Update vessel selection dropdown             document.getElementById('vesselSelect').value = mmsi;             // Update vessel info panel             updateVesselInfo(mmsi);             // Note: Popup will close automatically when user clicks elsewhere         }         </script>         </div>`)[0];
+                popup_6fada246f18a11b3fc6f8c806ef712d0.setContent(html_37dc0bc50b3b6defcdd6a23ec6e262bb);
+            
+        
+
+        marker_b2dd96fb5bab3284c6e9873da5ce2e2f.bindPopup(popup_6fada246f18a11b3fc6f8c806ef712d0)
+        ;
+
+        
+    
+    
+            marker_b2dd96fb5bab3284c6e9873da5ce2e2f.bindTooltip(
+                `<div>
+                     End: VLCC Sun 47 (Click for details)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_b2dd96fb5bab3284c6e9873da5ce2e2f.setIcon(icon_fb90db4ed8e5b6e56980c0a2043b998c);
+            
+</script>
+</html>

@@ -1,0 +1,27 @@
+mmsi,vessel_name,ship_type_name,total_positions,dead_reckoned_positions,dr_percentage
+100000000,MS Coastal Commerce,Cargo,12,3,25.0
+100000001,SS Freight 2,Cargo,19,5,26.3
+100000002,MV Central Cargo,Cargo,17,4,23.5
+100000003,MV Commerce 4,Cargo,21,4,19.0
+100000004,MS Carrier 5,Cargo,15,2,13.3
+100000005,SS Trade 6,Cargo,17,4,23.5
+100000006,MS Central Commerce,Cargo,15,0,0.0
+100000007,SS East Trade,Cargo,22,2,9.1
+100000100,MV Crude 1,Tanker,18,2,11.1
+100000101,ATB Fuel 2,Tanker,21,6,28.6
+100000102,MT Fuel 3,Tanker,13,3,23.1
+100000103,ATB Baltic Energy,Tanker,19,3,15.8
+100000200,MS West Cruise,Passenger,11,4,36.4
+100000201,RV North Cruise,Passenger,14,2,14.3
+100000202,MS Coastal Ferry,Passenger,19,3,15.8
+100000300,FV East Ocean,Fishing,13,3,23.1
+100000301,FV West Ocean,Fishing,14,1,7.1
+100000302,FV Central Ocean,Fishing,13,2,15.4
+100000303,RV East Ocean,Fishing,15,4,26.7
+100000304,RV Current 5,Fishing,13,2,15.4
+100000400,SY Wave 1,Pleasure craft,12,3,25.0
+100000401,MY Adventure 2,Pleasure craft,15,3,20.0
+100000402,SY Coastal Dream,Pleasure craft,14,2,14.3
+100000403,SY East Spirit,Pleasure craft,16,4,25.0
+100000404,MY North Wave,Pleasure craft,12,3,25.0
+100000405,SY Freedom 6,Pleasure craft,12,4,33.3

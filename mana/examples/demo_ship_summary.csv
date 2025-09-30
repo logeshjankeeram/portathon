@@ -1,0 +1,27 @@
+MMSI,Vessel Name,Ship Type,Total Positions,Dead Reckoned Positions,DR Percentage
+100000200,Passenger Vessel 1,Passenger,36,11,30.555555555555557
+100000201,Passenger Vessel 2,Passenger,16,4,25.0
+100000300,Fishing Vessel 1,Fishing,17,4,23.52941176470588
+100000304,Fishing Vessel 5,Fishing,22,5,22.727272727272727
+100000004,Cargo Vessel 5,Cargo,14,3,21.428571428571427
+100000405,Pleasure craft Vessel 6,Pleasure craft,35,7,20.0
+100000400,Pleasure craft Vessel 1,Pleasure craft,31,6,19.35483870967742
+100000303,Fishing Vessel 4,Fishing,16,3,18.75
+100000005,Cargo Vessel 6,Cargo,28,5,17.857142857142858
+100000007,Cargo Vessel 8,Cargo,35,6,17.142857142857142
+100000002,Cargo Vessel 3,Cargo,30,5,16.666666666666664
+100000101,Tanker Vessel 2,Tanker,31,5,16.129032258064516
+100000302,Fishing Vessel 3,Fishing,25,4,16.0
+100000100,Tanker Vessel 1,Tanker,26,4,15.384615384615385
+100000403,Pleasure craft Vessel 4,Pleasure craft,13,2,15.384615384615385
+100000102,Tanker Vessel 3,Tanker,48,5,10.416666666666668
+100000401,Pleasure craft Vessel 2,Pleasure craft,29,3,10.344827586206897
+100000000,Cargo Vessel 1,Cargo,20,2,10.0
+100000003,Cargo Vessel 4,Cargo,30,3,10.0
+100000103,Tanker Vessel 4,Tanker,22,2,9.090909090909092
+100000402,Pleasure craft Vessel 3,Pleasure craft,20,1,5.0
+100000006,Cargo Vessel 7,Cargo,28,1,3.571428571428571
+100000202,Passenger Vessel 3,Passenger,36,1,2.7777777777777777
+100000001,Cargo Vessel 2,Cargo,13,0,0.0
+100000404,Pleasure craft Vessel 5,Pleasure craft,11,0,0.0
+100000301,Fishing Vessel 2,Fishing,23,0,0.0
